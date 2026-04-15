@@ -4,7 +4,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import EmptyState from "@/components/ui/EmptyState";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
-import { Image, Heart, Star, X } from "lucide-react";
+import { Image, Heart, X, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,30 +27,50 @@ const mockPhotos: GalleryPhoto[] = [
   { id: "6", url: "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=400&h=400&fit=crop&q=80", client: "Anna K.", date: "Mar 28", tags: ["gel", "ombre"], isFavorite: false },
 ];
 
-const filters = ["All", "Favorites", "Recent"];
+const filters = ["All", "✨ Best Works", "Recent"];
 
 export default function GalleryPage() {
   const [filter, setFilter] = useState("All");
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const filtered = mockPhotos.filter((p) => {
-    if (filter === "Favorites") return p.isFavorite;
+    if (filter === "✨ Best Works") return p.isFavorite;
     return true;
   });
 
+  const selectedPhoto = selectedIndex !== null ? filtered[selectedIndex] : null;
+
+  const goNext = () => {
+    if (selectedIndex !== null && selectedIndex < filtered.length - 1) {
+      setSelectedIndex(selectedIndex + 1);
+    }
+  };
+  const goPrev = () => {
+    if (selectedIndex !== null && selectedIndex > 0) {
+      setSelectedIndex(selectedIndex - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen">
-      <PageHeader title="Gallery" subtitle={`${mockPhotos.length} photos`} />
+      <PageHeader title="Gallery" subtitle={`${mockPhotos.length} designs`} />
 
       <div className="px-4 space-y-3 pb-4">
         <ChipGroup options={filters} selected={filter} onChange={setFilter} />
 
+        {/* Best Works Banner */}
+        {filter === "✨ Best Works" && filtered.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <GlassCard elevated className="text-center py-4">
+              <Star className="w-5 h-5 text-primary mx-auto mb-1.5" />
+              <p className="text-sm font-semibold text-foreground">Your Best Works</p>
+              <p className="text-[11px] text-muted-foreground">{filtered.length} favorite designs</p>
+            </GlassCard>
+          </motion.div>
+        )}
+
         {filtered.length === 0 ? (
-          <EmptyState
-            icon={Image}
-            title="No photos yet"
-            description="Upload your first nail design photo"
-          />
+          <EmptyState icon={Image} title="No photos yet" description="Upload your first nail design photo after a visit" />
         ) : (
           <div className="grid grid-cols-3 gap-1.5">
             {filtered.map((photo, i) => (
@@ -59,20 +79,18 @@ export default function GalleryPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.03 }}
-                onClick={() => setSelectedPhoto(photo)}
-                className="relative aspect-square rounded-xl overflow-hidden cursor-pointer active:scale-95 transition-transform"
+                onClick={() => setSelectedIndex(i)}
+                className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-transform"
               >
-                <img
-                  src={photo.url}
-                  alt={`Design for ${photo.client}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+                <img src={photo.url} alt={`Design for ${photo.client}`} className="w-full h-full object-cover" loading="lazy" />
                 {photo.isFavorite && (
-                  <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-background/70 backdrop-blur flex items-center justify-center">
-                    <Heart className="w-2.5 h-2.5 text-primary fill-primary" />
+                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center">
+                    <Heart className="w-3 h-3 text-primary fill-primary" />
                   </div>
                 )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-2 pt-6">
+                  <p className="text-[10px] text-white font-medium">{photo.client}</p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -86,32 +104,68 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-lg flex flex-col"
-            onClick={() => setSelectedPhoto(null)}
+            className="fixed inset-0 z-50 bg-background flex flex-col"
           >
-            <div className="flex items-center justify-between p-4 pt-[max(env(safe-area-inset-top),1rem)]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 safe-top pb-2">
               <div>
-                <p className="text-sm font-medium text-foreground">{selectedPhoto.client}</p>
-                <p className="text-xs text-muted-foreground">{selectedPhoto.date}</p>
+                <p className="text-sm font-semibold text-foreground">{selectedPhoto.client}</p>
+                <p className="text-[11px] text-muted-foreground">{selectedPhoto.date}</p>
               </div>
-              <button className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                <X className="w-4 h-4 text-foreground" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toast.info("Toggled favorite")}
+                  className="w-9 h-9 rounded-xl bg-secondary/70 flex items-center justify-center active:scale-90 transition-transform"
+                >
+                  <Heart className={cn("w-4 h-4", selectedPhoto.isFavorite ? "text-primary fill-primary" : "text-muted-foreground")} />
+                </button>
+                <button
+                  onClick={() => setSelectedIndex(null)}
+                  className="w-9 h-9 rounded-xl bg-secondary/70 flex items-center justify-center active:scale-90 transition-transform"
+                >
+                  <X className="w-4 h-4 text-foreground" />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 flex items-center justify-center p-4">
+
+            {/* Image */}
+            <div className="flex-1 flex items-center justify-center px-2 relative">
+              {selectedIndex !== null && selectedIndex > 0 && (
+                <button
+                  onClick={goPrev}
+                  className="absolute left-2 z-10 w-10 h-10 rounded-full bg-secondary/60 backdrop-blur flex items-center justify-center active:scale-90"
+                >
+                  <ChevronLeft className="w-5 h-5 text-foreground" />
+                </button>
+              )}
               <motion.img
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
+                key={selectedPhoto.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
                 src={selectedPhoto.url}
                 alt="Nail design"
-                className="max-w-full max-h-full rounded-2xl object-contain"
-                onClick={(e) => e.stopPropagation()}
+                className="max-w-full max-h-full rounded-3xl object-contain"
               />
+              {selectedIndex !== null && selectedIndex < filtered.length - 1 && (
+                <button
+                  onClick={goNext}
+                  className="absolute right-2 z-10 w-10 h-10 rounded-full bg-secondary/60 backdrop-blur flex items-center justify-center active:scale-90"
+                >
+                  <ChevronRight className="w-5 h-5 text-foreground" />
+                </button>
+              )}
             </div>
-            <div className="p-4 safe-bottom">
+
+            {/* Tags + Counter */}
+            <div className="px-4 pb-2 safe-bottom space-y-2">
+              <div className="flex justify-center">
+                <span className="text-[11px] text-muted-foreground">
+                  {selectedIndex !== null ? selectedIndex + 1 : 0} / {filtered.length}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-1.5 justify-center">
                 {selectedPhoto.tags.map((tag) => (
-                  <span key={tag} className="text-[10px] bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
+                  <span key={tag} className="text-[11px] bg-secondary/80 text-secondary-foreground px-3 py-1 rounded-full">
                     #{tag}
                   </span>
                 ))}

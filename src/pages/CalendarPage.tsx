@@ -10,8 +10,6 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const views = ["Day", "Week"];
-
 interface Appointment {
   id: string;
   time: string;
@@ -30,41 +28,40 @@ const mockAppointments: Record<string, Appointment[]> = {
   ],
 };
 
-const statusConfig = {
-  planned: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
-  confirmed: { bg: "bg-success/10", text: "text-success", dot: "bg-success" },
-  completed: { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground" },
-  canceled: { bg: "bg-destructive/10", text: "text-destructive", dot: "bg-destructive" },
-  no_show: { bg: "bg-warning/10", text: "text-warning", dot: "bg-warning" },
+const statusColors = {
+  planned: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+  confirmed: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
+  completed: "bg-muted text-muted-foreground",
+  canceled: "bg-destructive/10 text-destructive",
+  no_show: "bg-warning/10 text-warning",
+};
+
+const statusDot = {
+  planned: "bg-blue-500",
+  confirmed: "bg-emerald-500",
+  completed: "bg-muted-foreground",
+  canceled: "bg-destructive",
+  no_show: "bg-warning",
 };
 
 export default function CalendarPage() {
-  const [view, setView] = useState("Day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const appointments = mockAppointments.today || [];
-
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
   const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
 
   return (
     <div className="min-h-screen">
-      <PageHeader
-        title="Calendar"
-        subtitle={format(currentDate, "EEEE, MMMM d")}
-      />
+      <PageHeader title="Calendar" subtitle={format(currentDate, "EEEE, MMMM d")} />
 
       <div className="px-4 space-y-3 pb-4">
-        {/* View Toggle */}
-        <ChipGroup options={views} selected={view} onChange={setView} />
-
         {/* Week Strip */}
-        <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentDate(addDays(currentDate, -7))} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setCurrentDate(addDays(currentDate, -7))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0 active:scale-90 transition-transform">
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
-          <div className="flex-1 flex justify-between">
+          <div className="flex-1 flex justify-between gap-1">
             {weekDays.map((day) => {
               const isSelected = isSameDay(day, currentDate);
               const isToday = isSameDay(day, new Date());
@@ -73,101 +70,92 @@ export default function CalendarPage() {
                   key={day.toISOString()}
                   onClick={() => setCurrentDate(day)}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 w-9 py-1.5 rounded-xl transition-colors",
-                    isSelected && "bg-primary",
-                    !isSelected && isToday && "bg-primary/10"
+                    "flex flex-col items-center gap-1 flex-1 py-2 rounded-2xl transition-all duration-200",
+                    isSelected && "bg-primary shadow-sm shadow-primary/20",
+                    !isSelected && isToday && "bg-primary/8"
                   )}
                 >
                   <span className={cn("text-[10px] font-medium", isSelected ? "text-primary-foreground" : "text-muted-foreground")}>
                     {format(day, "EEE")}
                   </span>
-                  <span className={cn("text-sm font-semibold", isSelected ? "text-primary-foreground" : "text-foreground")}>
+                  <span className={cn("text-sm font-bold", isSelected ? "text-primary-foreground" : "text-foreground")}>
                     {format(day, "d")}
                   </span>
+                  {isToday && !isSelected && <span className="w-1 h-1 rounded-full bg-primary" />}
                 </button>
               );
             })}
           </div>
-          <button onClick={() => setCurrentDate(addDays(currentDate, 7))} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+          <button onClick={() => setCurrentDate(addDays(currentDate, 7))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0 active:scale-90 transition-transform">
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
+        {/* Day Summary */}
+        {appointments.length > 0 && (
+          <GlassCard elevated className="py-3">
+            <div className="flex justify-between text-center">
+              <div>
+                <p className="text-lg font-bold text-foreground">{appointments.length}</p>
+                <p className="text-[10px] text-muted-foreground">Clients</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-foreground">
+                  {formatCurrency(appointments.reduce((s, a) => s + a.price, 0))}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Expected</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-foreground">
+                  {Math.round(appointments.reduce((s, a) => {
+                    const [h1, m1] = a.time.split(":").map(Number);
+                    const [h2, m2] = a.endTime.split(":").map(Number);
+                    return s + (h2 * 60 + m2) - (h1 * 60 + m1);
+                  }, 0) / 60)}h
+                </p>
+                <p className="text-[10px] text-muted-foreground">Booked</p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
         {/* Appointments */}
         {appointments.length === 0 ? (
-          <EmptyState
-            icon={CalendarDays}
-            title="No appointments"
-            description="Your schedule is clear for this day"
-          />
+          <EmptyState icon={CalendarDays} title="No appointments" description="Your schedule is clear for this day" />
         ) : (
           <div className="space-y-2">
-            {appointments.map((apt, i) => {
-              const sc = statusConfig[apt.status];
-              return (
-                <motion.div
-                  key={apt.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <GlassCard className="py-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center gap-1 pt-0.5">
-                        <span className="text-sm font-semibold text-foreground">{apt.time}</span>
-                        <div className="w-px h-4 bg-border" />
-                        <span className="text-[10px] text-muted-foreground">{apt.endTime}</span>
-                      </div>
-                      <div className={cn("w-0.5 h-full min-h-[48px] rounded-full", sc.dot)} />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-foreground">{apt.client}</span>
-                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", sc.bg, sc.text)}>
-                            {apt.status.replace("_", " ")}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {apt.services.map((s) => (
-                            <span key={s} className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                        <p className="text-xs font-medium text-primary mt-1.5">
-                          {formatCurrency(apt.price)} UZS
-                        </p>
-                      </div>
+            {appointments.map((apt, i) => (
+              <motion.div
+                key={apt.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <GlassCard className="py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex flex-col items-center gap-1 pt-0.5 min-w-[44px]">
+                      <span className="text-sm font-bold text-foreground">{apt.time}</span>
+                      <div className={cn("w-0.5 h-5 rounded-full", statusDot[apt.status])} />
+                      <span className="text-[10px] text-muted-foreground">{apt.endTime}</span>
                     </div>
-                  </GlassCard>
-                </motion.div>
-              );
-            })}
-
-            {/* Day Summary */}
-            <GlassCard className="mt-2">
-              <div className="flex justify-between text-center">
-                <div>
-                  <p className="text-lg font-semibold text-foreground">{appointments.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Appointments</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">
-                    {formatCurrency(appointments.reduce((sum, a) => sum + a.price, 0))}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Expected Revenue</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">
-                    {Math.round(appointments.reduce((sum, a) => {
-                      const [h1, m1] = a.time.split(":").map(Number);
-                      const [h2, m2] = a.endTime.split(":").map(Number);
-                      return sum + (h2 * 60 + m2) - (h1 * 60 + m1);
-                    }, 0) / 60)}h
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Booked Time</p>
-                </div>
-              </div>
-            </GlassCard>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-semibold text-foreground">{apt.client}</span>
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", statusColors[apt.status])}>
+                          {apt.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {apt.services.map((s) => (
+                          <span key={s} className="text-[10px] bg-secondary/70 text-secondary-foreground px-2 py-0.5 rounded-full">{s}</span>
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold text-primary">{formatCurrency(apt.price)} UZS</p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>

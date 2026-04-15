@@ -1,5 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
@@ -9,14 +11,24 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
+    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+          <Sparkles className="w-8 h-8 text-primary" />
+        </div>
+        <h1 className="text-4xl font-display font-bold text-foreground mb-2">404</h1>
+        <p className="text-sm text-muted-foreground mb-6">This page doesn't exist</p>
+        <a
+          href="/"
+          className="inline-flex h-11 px-6 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-medium text-sm shadow-lg shadow-primary/20"
+        >
+          Go Home
         </a>
-      </div>
+      </motion.div>
     </div>
   );
 };
