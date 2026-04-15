@@ -5,15 +5,17 @@ interface GlassCardProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  elevated?: boolean;
 }
 
-export default function GlassCard({ children, className, onClick }: GlassCardProps) {
+export default function GlassCard({ children, className, onClick, elevated }: GlassCardProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
-        "glass-card rounded-2xl p-4 transition-transform active:scale-[0.98]",
-        onClick && "cursor-pointer",
+        elevated ? "glass-card-elevated" : "glass-card",
+        "rounded-2xl p-4 transition-all duration-200 active:scale-[0.985]",
+        onClick && "cursor-pointer hover:shadow-md",
         className
       )}
     >
