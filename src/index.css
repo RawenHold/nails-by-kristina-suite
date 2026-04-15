@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -33,12 +33,14 @@
     --gold: 38 75% 55%;
     --gold-foreground: 38 90% 15%;
     --rose: 350 65% 55%;
-    --rose-light: 350 80% 92%;
+    --rose-light: 350 80% 95%;
     --rose-foreground: 0 0% 100%;
     --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 38 90% 15%;
+    --info: 210 80% 55%;
+    --info-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -51,30 +53,31 @@
   }
 
   .dark {
-    --background: 20 15% 8%;
+    --background: 20 15% 6%;
     --foreground: 30 15% 92%;
-    --card: 20 12% 12%;
+    --card: 20 12% 10%;
     --card-foreground: 30 15% 92%;
-    --popover: 20 12% 12%;
+    --popover: 20 12% 10%;
     --popover-foreground: 30 15% 92%;
-    --primary: 350 65% 60%;
+    --primary: 350 65% 62%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 20 10% 18%;
+    --secondary: 20 10% 15%;
     --secondary-foreground: 30 15% 85%;
-    --muted: 20 10% 16%;
+    --muted: 20 10% 14%;
     --muted-foreground: 20 8% 55%;
     --accent: 38 75% 55%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 10% 20%;
-    --input: 20 10% 20%;
-    --ring: 350 65% 60%;
+    --border: 20 10% 18%;
+    --input: 20 10% 18%;
+    --ring: 350 65% 62%;
 
-    --glass: 20 12% 12% / 0.75;
-    --glass-border: 20 10% 22% / 0.5;
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    --rose-light: 350 40% 20%;
+    --glass: 20 12% 10% / 0.75;
+    --glass-border: 20 10% 20% / 0.5;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --rose-light: 350 40% 18%;
+    --info: 210 80% 60%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -107,16 +110,29 @@
 @layer utilities {
   .glass-card {
     background: hsl(var(--glass));
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid hsl(var(--glass-border));
     box-shadow: var(--glass-shadow);
   }
+  .glass-card-elevated {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow), 0 2px 8px rgba(0,0,0,0.04);
+  }
   .glass-nav {
     background: hsl(var(--glass));
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
     border-top: 1px solid hsl(var(--glass-border));
+  }
+  .glass-header {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border-bottom: 0.5px solid hsl(var(--glass-border));
   }
   .text-display {
     font-family: 'Playfair Display', Georgia, serif;
@@ -124,11 +140,23 @@
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
   }
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  .shimmer {
+    background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }

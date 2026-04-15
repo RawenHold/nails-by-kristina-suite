@@ -9,29 +9,37 @@ import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import CalendarPage from "@/pages/CalendarPage";
 import ClientsPage from "@/pages/ClientsPage";
+import ClientProfilePage from "@/pages/ClientProfilePage";
 import GalleryPage from "@/pages/GalleryPage";
 import FinancesPage from "@/pages/FinancesPage";
 import NotFound from "./pages/NotFound";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center gap-4"
+      >
+        <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-primary" />
+        </div>
+        <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+      </motion.div>
+    </div>
+  );
+}
 
 function AppRoutes() {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-xs text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthPage />;
-  }
+  if (loading) return <LoadingScreen />;
+  if (!user) return <AuthPage />;
 
   return (
     <Routes>
@@ -39,6 +47,7 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/clients" element={<ClientsPage />} />
+        <Route path="/clients/:id" element={<ClientProfilePage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/finances" element={<FinancesPage />} />
       </Route>

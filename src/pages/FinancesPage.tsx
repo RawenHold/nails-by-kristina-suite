@@ -10,8 +10,6 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
-  Plus,
-  Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -45,18 +43,17 @@ export default function FinancesPage() {
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
 
-  const totalIncome = mockTransactions
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
-  const totalExpenses = mockTransactions
-    .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + t.amount, 0);
+  const totalIncome = mockTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const totalExpenses = mockTransactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
   const filtered = mockTransactions.filter((t) => {
     if (tab === "Income") return t.type === "income";
     if (tab === "Expenses") return t.type === "expense";
     return true;
   });
+
+  const chartData = [65, 45, 80, 55, 90, 70, 95];
+  const maxChart = Math.max(...chartData);
 
   return (
     <div className="min-h-screen">
@@ -67,28 +64,40 @@ export default function FinancesPage() {
 
         {/* Summary */}
         <div className="grid grid-cols-3 gap-2">
-          <StatCard label="Income" value={`${formatCurrency(totalIncome)}`} icon={TrendingUp} className="col-span-1" />
-          <StatCard label="Expenses" value={`${formatCurrency(totalExpenses)}`} icon={TrendingDown} className="col-span-1" />
-          <StatCard label="Profit" value={`${formatCurrency(totalIncome - totalExpenses)}`} icon={Wallet} className="col-span-1" />
+          <GlassCard className="text-center py-3">
+            <p className="text-[10px] text-muted-foreground mb-0.5">Income</p>
+            <p className="text-sm font-bold text-success">{formatCurrency(totalIncome)}</p>
+          </GlassCard>
+          <GlassCard className="text-center py-3">
+            <p className="text-[10px] text-muted-foreground mb-0.5">Expenses</p>
+            <p className="text-sm font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
+          </GlassCard>
+          <GlassCard className="text-center py-3">
+            <p className="text-[10px] text-muted-foreground mb-0.5">Profit</p>
+            <p className="text-sm font-bold text-foreground">{formatCurrency(totalIncome - totalExpenses)}</p>
+          </GlassCard>
         </div>
 
-        {/* Revenue Chart Placeholder */}
-        <GlassCard>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Revenue Trend</p>
-          <div className="flex items-end gap-1 h-20">
-            {[65, 45, 80, 55, 90, 70, 95].map((h, i) => (
+        {/* Chart */}
+        <GlassCard elevated>
+          <p className="text-[11px] font-semibold text-foreground mb-3">Revenue Trend</p>
+          <div className="flex items-end gap-1.5 h-24">
+            {chartData.map((h, i) => (
               <motion.div
                 key={i}
                 initial={{ height: 0 }}
-                animate={{ height: `${h}%` }}
-                transition={{ delay: i * 0.05, duration: 0.4 }}
-                className={cn("flex-1 rounded-t-md", i === 6 ? "bg-primary" : "bg-primary/20")}
+                animate={{ height: `${(h / maxChart) * 100}%` }}
+                transition={{ delay: i * 0.06, duration: 0.5, ease: "easeOut" }}
+                className={cn(
+                  "flex-1 rounded-lg transition-colors",
+                  i === chartData.length - 1 ? "bg-primary" : "bg-primary/15"
+                )}
               />
             ))}
           </div>
-          <div className="flex justify-between mt-1.5">
+          <div className="flex justify-between mt-2">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <span key={d} className="text-[8px] text-muted-foreground flex-1 text-center">{d}</span>
+              <span key={d} className="text-[9px] text-muted-foreground flex-1 text-center">{d}</span>
             ))}
           </div>
         </GlassCard>
@@ -97,18 +106,13 @@ export default function FinancesPage() {
         <ChipGroup options={tabs} selected={tab} onChange={setTab} />
 
         {/* Transactions */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {filtered.map((txn, i) => (
-            <motion.div
-              key={txn.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-            >
+            <motion.div key={txn.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
               <GlassCard className="flex items-center gap-3 py-3">
                 <div className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-                  txn.type === "income" ? "bg-success/10" : "bg-destructive/10"
+                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
+                  txn.type === "income" ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20"
                 )}>
                   {txn.type === "income" ? (
                     <ArrowUpRight className="w-4 h-4 text-success" />
@@ -120,7 +124,7 @@ export default function FinancesPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground truncate">{txn.description}</span>
                     <span className={cn(
-                      "text-sm font-semibold shrink-0 ml-2",
+                      "text-sm font-bold shrink-0 ml-2",
                       txn.type === "income" ? "text-success" : "text-destructive"
                     )}>
                       {txn.type === "income" ? "+" : "-"}{formatCurrency(txn.amount)}
