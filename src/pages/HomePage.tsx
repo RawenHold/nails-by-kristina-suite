@@ -1,93 +1,60 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import StatCard from "@/components/ui/StatCard";
 import ChipGroup from "@/components/ui/ChipGroup";
-import FloatingActionButton from "@/components/ui/FloatingActionButton";
+import EmptyState from "@/components/ui/EmptyState";
 import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  TrendingDown,
-  CalendarDays,
-  Users,
-  Bell,
-  Clock,
-  Wallet,
-  UserPlus,
-  DollarSign,
-  ArrowRight,
-  Sparkles,
-  AlertCircle,
-  Repeat,
-  Heart,
-} from "lucide-react";
+import { TrendingUp, TrendingDown, CalendarDays, Users, Bell, Wallet, UserPlus, DollarSign, ArrowRight, AlertCircle, Repeat, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useCreateReminder } from "@/hooks/useReminders";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
-const periods = ["Today", "This Week", "This Month"];
+const periods = ["Сегодня", "Неделя", "Месяц"];
+const periodMap: Record<string, string> = { "Сегодня": "today", "Неделя": "week", "Месяц": "month" };
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Доброе утро";
+  if (h >= 12 && h < 17) return "Добрый день";
+  if (h >= 17 && h < 22) return "Добрый вечер";
+  return "Доброй ночи";
+}
 
 export default function HomePage() {
-  const [period, setPeriod] = useState("Today");
+  const [period, setPeriod] = useState("Месяц");
   const navigate = useNavigate();
+  const { data: stats, isLoading } = useDashboardStats(periodMap[period]);
+  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
 
-  const stats = {
-    revenue: "1,250,000",
-    expenses: "320,000",
-    profit: "930,000",
-    appointments: 4,
-    avgCheck: "312,500",
-    repeatRate: "78%",
-  };
+  const overdueReminders = useMemo(() => (stats?.reminders || []).filter(r => r.status === "overdue"), [stats]);
+  const todayReminders = useMemo(() => (stats?.reminders || []).filter(r => r.status === "today"), [stats]);
 
   const quickActions = [
-    { icon: UserPlus, label: "Client", color: "bg-primary/10", action: () => navigate("/clients") },
-    { icon: CalendarDays, label: "Book", color: "bg-blue-50 dark:bg-blue-900/20", action: () => navigate("/calendar") },
-    { icon: DollarSign, label: "Income", color: "bg-emerald-50 dark:bg-emerald-900/20", action: () => navigate("/finances") },
-    { icon: TrendingDown, label: "Expense", color: "bg-amber-50 dark:bg-amber-900/20", action: () => navigate("/finances") },
-    { icon: Bell, label: "Remind", color: "bg-purple-50 dark:bg-purple-900/20", action: () => toast.info("Coming soon") },
+    { icon: UserPlus, label: "Клиент", color: "bg-primary/10", action: () => navigate("/clients") },
+    { icon: CalendarDays, label: "Запись", color: "bg-blue-50 dark:bg-blue-900/20", action: () => navigate("/calendar") },
+    { icon: DollarSign, label: "Доход", color: "bg-emerald-50 dark:bg-emerald-900/20", action: () => navigate("/finances") },
+    { icon: TrendingDown, label: "Расход", color: "bg-amber-50 dark:bg-amber-900/20", action: () => navigate("/finances") },
+    { icon: Settings, label: "Ещё", color: "bg-purple-50 dark:bg-purple-900/20", action: () => navigate("/settings") },
   ];
-
-  const overdueReminders = [
-    { client: "Natasha R.", days: 3, phone: "+998 95 567 8901" },
-    { client: "Olga P.", days: 1, phone: "+998 94 456 7890" },
-  ];
-
-  const todayReminders = [
-    { client: "Elena V.", days: 0, phone: "+998 93 345 6789" },
-  ];
-
-  const upcomingAppointments = [
-    { time: "10:00", client: "Anna K.", service: "Gel Polish + Design", status: "confirmed" as const, price: 350000 },
-    { time: "12:30", client: "Maria S.", service: "Manicure + Gel", status: "planned" as const, price: 280000 },
-    { time: "15:00", client: "Elena V.", service: "Removal + New Set", status: "confirmed" as const, price: 450000 },
-  ];
-
-  const topClients = [
-    { name: "Anna K.", visits: 24, spent: 7200000, trend: "up" },
-    { name: "Maria S.", visits: 15, spent: 4500000, trend: "up" },
-    { name: "Elena V.", visits: 8, spent: 2400000, trend: "stable" },
-  ];
-
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
 
   return (
     <div className="min-h-screen">
-      <PageHeader title="Nails by Kristina" subtitle="Good morning, Kristina ✨" />
-
+      <PageHeader title="Nails by Kristina" subtitle={`${getGreeting()}, Кристина ✨`} />
       <div className="px-4 space-y-4 pb-4">
-        {/* Period */}
         <ChipGroup options={periods} selected={period} onChange={setPeriod} />
 
-        {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-2.5">
-          <StatCard label="Revenue" value={`${stats.revenue}`} icon={TrendingUp} trend={12} iconBg="bg-emerald-50 dark:bg-emerald-900/20" />
-          <StatCard label="Expenses" value={`${stats.expenses}`} icon={TrendingDown} trend={-5} iconBg="bg-red-50 dark:bg-red-900/20" />
-          <StatCard label="Net Profit" value={`${stats.profit}`} icon={Wallet} iconBg="bg-primary/10" />
-          <StatCard label="Avg Check" value={`${stats.avgCheck}`} icon={DollarSign} trend={8} iconBg="bg-amber-50 dark:bg-amber-900/20" />
+          <StatCard label="Доходы" value={formatCurrency(stats?.totalIncome || 0)} icon={TrendingUp} iconBg="bg-emerald-50 dark:bg-emerald-900/20" />
+          <StatCard label="Расходы" value={formatCurrency(stats?.totalExpenses || 0)} icon={TrendingDown} iconBg="bg-red-50 dark:bg-red-900/20" />
+          <StatCard label="Прибыль" value={formatCurrency(stats?.profit || 0)} icon={Wallet} iconBg="bg-primary/10" />
+          <StatCard label="Ср. чек" value={formatCurrency(stats?.avgCheck || 0)} icon={DollarSign} iconBg="bg-amber-50 dark:bg-amber-900/20" />
         </div>
 
-        {/* Quick Actions */}
         <GlassCard elevated>
           <div className="flex justify-between">
             {quickActions.map((a) => (
@@ -101,32 +68,29 @@ export default function HomePage() {
           </div>
         </GlassCard>
 
-        {/* Overdue Reminders — highest priority */}
         {overdueReminders.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-              <h2 className="text-sm font-semibold text-foreground">Overdue Reminders</h2>
+              <h2 className="text-sm font-semibold text-foreground">Просроченные</h2>
               <span className="text-[10px] font-bold bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">{overdueReminders.length}</span>
             </div>
             <div className="space-y-1.5">
               {overdueReminders.map((r, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                <motion.div key={r.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
                   <GlassCard className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center">
                         <Bell className="w-4 h-4 text-destructive" />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-foreground">{r.client}</span>
-                        <p className="text-[10px] text-destructive font-medium">{r.days} days overdue</p>
+                        <span className="text-sm font-medium text-foreground">{r.clients?.full_name}</span>
+                        <p className="text-[10px] text-destructive font-medium">Просрочено</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => toast.info("Message template coming soon")}
-                      className="text-[11px] font-semibold text-primary bg-primary/8 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
-                    >
-                      Remind
+                    <button onClick={() => navigate(`/clients/${r.client_id}`)}
+                      className="text-[11px] font-semibold text-primary bg-primary/8 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+                      Открыть
                     </button>
                   </GlassCard>
                 </motion.div>
@@ -135,102 +99,93 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Today's Reminders */}
         {todayReminders.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <Bell className="w-3.5 h-3.5 text-warning" />
-              <h2 className="text-sm font-semibold text-foreground">Due Today</h2>
+              <h2 className="text-sm font-semibold text-foreground">На сегодня</h2>
             </div>
-            {todayReminders.map((r, i) => (
-              <GlassCard key={i} className="flex items-center justify-between py-3">
+            {todayReminders.map((r) => (
+              <GlassCard key={r.id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-warning/10 flex items-center justify-center">
-                    <Bell className="w-4 h-4 text-warning" />
-                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-warning/10 flex items-center justify-center"><Bell className="w-4 h-4 text-warning" /></div>
                   <div>
-                    <span className="text-sm font-medium text-foreground">{r.client}</span>
-                    <p className="text-[10px] text-warning font-medium">Due today</p>
+                    <span className="text-sm font-medium text-foreground">{r.clients?.full_name}</span>
+                    <p className="text-[10px] text-warning font-medium">Сегодня</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => toast.info("Message template coming soon")}
-                  className="text-[11px] font-semibold text-primary bg-primary/8 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
-                >
-                  Remind
+                <button onClick={() => navigate(`/clients/${r.client_id}`)}
+                  className="text-[11px] font-semibold text-primary bg-primary/8 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+                  Открыть
                 </button>
               </GlassCard>
             ))}
           </div>
         )}
 
-        {/* Upcoming Appointments */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-foreground">Today's Schedule</h2>
+            <h2 className="text-sm font-semibold text-foreground">Расписание на сегодня</h2>
             <button onClick={() => navigate("/calendar")} className="text-[11px] text-primary font-semibold flex items-center gap-0.5 active:opacity-70">
-              View All <ArrowRight className="w-3 h-3" />
+              Все <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-1.5">
-            {upcomingAppointments.map((apt, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <GlassCard className="flex items-center gap-3 py-3">
-                  <div className="flex flex-col items-center min-w-[44px]">
-                    <span className="text-sm font-bold text-foreground">{apt.time}</span>
-                    <span className={cn(
-                      "text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5",
-                      apt.status === "confirmed" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                    )}>
-                      {apt.status}
-                    </span>
-                  </div>
-                  <div className="w-px h-10 bg-border/60 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground">{apt.client}</span>
-                    <p className="text-[11px] text-muted-foreground truncate">{apt.service}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-foreground/70 shrink-0">{formatCurrency(apt.price)}</span>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
+          {(stats?.appointmentsToday?.length || 0) === 0 ? (
+            <EmptyState icon={CalendarDays} title="Нет записей" description="На сегодня расписание свободно" />
+          ) : (
+            <div className="space-y-1.5">
+              {stats!.appointmentsToday.map((apt: any, i: number) => (
+                <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <GlassCard className="flex items-center gap-3 py-3">
+                    <div className="flex flex-col items-center min-w-[44px]">
+                      <span className="text-sm font-bold text-foreground">{format(new Date(apt.start_time), "HH:mm")}</span>
+                      <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5",
+                        apt.status === "confirmed" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                      )}>{apt.status === "confirmed" ? "подтв." : "план"}</span>
+                    </div>
+                    <div className="w-px h-10 bg-border/60 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground">{apt.clients?.full_name || "—"}</span>
+                      <p className="text-[11px] text-muted-foreground">{formatCurrency(apt.expected_price)} сум</p>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Repeat Client Insights */}
         <GlassCard elevated>
           <div className="flex items-center gap-1.5 mb-3">
             <Repeat className="w-3.5 h-3.5 text-primary" />
-            <p className="text-xs font-semibold text-foreground">Repeat Client Insights</p>
+            <p className="text-xs font-semibold text-foreground">Клиентская база</p>
           </div>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="text-center">
-              <p className="text-lg font-bold text-foreground">{stats.repeatRate}</p>
-              <p className="text-[10px] text-muted-foreground">Return Rate</p>
+              <p className="text-lg font-bold text-foreground">{stats?.activeClients || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Активные</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold text-foreground">{stats.appointments}</p>
-              <p className="text-[10px] text-muted-foreground">This Month</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-foreground">12</p>
-              <p className="text-[10px] text-muted-foreground">Active Clients</p>
+              <p className="text-lg font-bold text-foreground">{stats?.topClients?.length || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Всего</p>
             </div>
           </div>
-          <div className="space-y-2">
-            {topClients.map((c, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-muted-foreground w-4">{i + 1}</span>
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-[10px] font-semibold text-primary">{c.name.split(" ").map(n => n[0]).join("")}</span>
+          {(stats?.topClients || []).length > 0 && (
+            <div className="space-y-2">
+              {stats!.topClients.slice(0, 3).map((c: any, i: number) => (
+                <div key={c.id} className="flex items-center justify-between cursor-pointer active:opacity-70" onClick={() => navigate(`/clients/${c.id}`)}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-muted-foreground w-4">{i + 1}</span>
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-primary">{c.full_name?.split(" ").map((n: string) => n[0]).join("")}</span>
+                    </div>
+                    <span className="text-xs font-medium text-foreground">{c.full_name}</span>
                   </div>
-                  <span className="text-xs font-medium text-foreground">{c.name}</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">{formatCurrency(c.total_spent)} сум</span>
                 </div>
-                <span className="text-[11px] font-semibold text-muted-foreground">{formatCurrency(c.spent)}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </GlassCard>
       </div>
     </div>

@@ -1,154 +1,256 @@
 import { useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
-import StatCard from "@/components/ui/StatCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import EmptyState from "@/components/ui/EmptyState";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { ArrowUpRight, ArrowDownRight, Wallet, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIncomes, useCreateIncome, useDeleteIncome } from "@/hooks/useIncomes";
+import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseCategories } from "@/hooks/useExpenses";
+import { useClients } from "@/hooks/useClients";
+import { format, addMonths, subMonths } from "date-fns";
+import { ru } from "date-fns/locale";
 
-const periods = ["Today", "This Week", "This Month"];
-const tabs = ["Overview", "Income", "Expenses"];
-
-interface Transaction {
-  id: string;
-  type: "income" | "expense";
-  amount: number;
-  description: string;
-  category: string;
-  date: string;
-  client?: string;
-}
-
-const mockTransactions: Transaction[] = [
-  { id: "1", type: "income", amount: 350000, description: "Gel Polish + Design", category: "Service", date: "Today, 11:30", client: "Anna K." },
-  { id: "2", type: "income", amount: 280000, description: "Manicure + Gel Polish", category: "Service", date: "Today, 14:00", client: "Maria S." },
-  { id: "3", type: "expense", amount: 150000, description: "Gel polish set", category: "Materials", date: "Today, 09:15" },
-  { id: "4", type: "income", amount: 450000, description: "Full Set + Design", category: "Service", date: "Yesterday, 16:00", client: "Elena V." },
-  { id: "5", type: "expense", amount: 80000, description: "Nail files & buffers", category: "Tools", date: "Yesterday, 10:30" },
-  { id: "6", type: "expense", amount: 90000, description: "Instagram promotion", category: "Advertising", date: "2 days ago" },
+const tabs = ["Обзор", "Доходы", "Расходы"];
+const paymentMethods = [
+  { value: "cash", label: "Наличные" },
+  { value: "card", label: "Карта" },
+  { value: "transfer", label: "Перевод" },
 ];
 
 export default function FinancesPage() {
-  const [period, setPeriod] = useState("This Month");
-  const [tab, setTab] = useState("Overview");
+  const [month, setMonth] = useState(new Date());
+  const [tab, setTab] = useState("Обзор");
+  const [showIncome, setShowIncome] = useState(false);
+  const [showExpense, setShowExpense] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "income" | "expense" } | null>(null);
+  const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash", note: "" });
+  const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
+
+  const { data: incomes, isLoading: loadingI } = useIncomes(month);
+  const { data: expenses, isLoading: loadingE } = useExpenses(month);
+  const { data: categories } = useExpenseCategories();
+  const { data: clients } = useClients();
+  const createIncome = useCreateIncome();
+  const createExpense = useCreateExpense();
+  const deleteIncome = useDeleteIncome();
+  const deleteExpense = useDeleteExpense();
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
+  const totalIncome = (incomes || []).reduce((s, i) => s + i.amount, 0);
+  const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
-  const totalIncome = mockTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
-  const totalExpenses = mockTransactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const handleCreateIncome = async () => {
+    const amount = parseInt(incomeForm.amount);
+    if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    await createIncome.mutateAsync({
+      amount,
+      client_id: incomeForm.client_id || null,
+      payment_method: incomeForm.payment_method as any,
+      note: incomeForm.note || null,
+      received_at: new Date().toISOString(),
+    });
+    setShowIncome(false);
+    setIncomeForm({ amount: "", client_id: "", payment_method: "cash", note: "" });
+  };
 
-  const filtered = mockTransactions.filter((t) => {
-    if (tab === "Income") return t.type === "income";
-    if (tab === "Expenses") return t.type === "expense";
-    return true;
-  });
+  const handleCreateExpense = async () => {
+    const amount = parseInt(expenseForm.amount);
+    if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    await createExpense.mutateAsync({
+      amount,
+      category_id: expenseForm.category_id || null,
+      note: expenseForm.note || null,
+      spent_at: new Date().toISOString(),
+    });
+    setShowExpense(false);
+    setExpenseForm({ amount: "", category_id: "", note: "" });
+  };
 
-  const chartData = [65, 45, 80, 55, 90, 70, 95];
-  const maxChart = Math.max(...chartData);
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "income") deleteIncome.mutate(deleteTarget.id);
+    else deleteExpense.mutate(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  const allTransactions = [
+    ...(tab !== "Расходы" ? (incomes || []).map(i => ({ ...i, type: "income" as const, date: i.received_at, desc: i.note || "Оплата", category: i.clients?.full_name || "Клиент" })) : []),
+    ...(tab !== "Доходы" ? (expenses || []).map(e => ({ ...e, type: "expense" as const, date: e.spent_at, desc: e.note || "Расход", category: e.expense_categories?.name || "Другое" })) : []),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="min-h-screen">
-      <PageHeader title="Finances" subtitle="Track your business" />
-
+      <PageHeader title="Финансы" subtitle="Учёт доходов и расходов" />
       <div className="px-4 space-y-3 pb-4">
-        <ChipGroup options={periods} selected={period} onChange={setPeriod} />
+        {/* Month selector */}
+        <div className="flex items-center justify-center gap-4">
+          <button onClick={() => setMonth(m => subMonths(m, 1))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform">
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <span className="text-sm font-semibold text-foreground min-w-[140px] text-center">
+            {format(month, "LLLL yyyy", { locale: ru })}
+          </span>
+          <button onClick={() => setMonth(m => addMonths(m, 1))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform">
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
 
-        {/* Summary */}
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center py-3">
-            <p className="text-[10px] text-muted-foreground mb-0.5">Income</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Доходы</p>
             <p className="text-sm font-bold text-success">{formatCurrency(totalIncome)}</p>
           </GlassCard>
           <GlassCard className="text-center py-3">
-            <p className="text-[10px] text-muted-foreground mb-0.5">Expenses</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Расходы</p>
             <p className="text-sm font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
           </GlassCard>
           <GlassCard className="text-center py-3">
-            <p className="text-[10px] text-muted-foreground mb-0.5">Profit</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Прибыль</p>
             <p className="text-sm font-bold text-foreground">{formatCurrency(totalIncome - totalExpenses)}</p>
           </GlassCard>
         </div>
 
-        {/* Chart */}
-        <GlassCard elevated>
-          <p className="text-[11px] font-semibold text-foreground mb-3">Revenue Trend</p>
-          <div className="flex items-end gap-1.5 h-24">
-            {chartData.map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ height: 0 }}
-                animate={{ height: `${(h / maxChart) * 100}%` }}
-                transition={{ delay: i * 0.06, duration: 0.5, ease: "easeOut" }}
-                className={cn(
-                  "flex-1 rounded-lg transition-colors",
-                  i === chartData.length - 1 ? "bg-primary" : "bg-primary/15"
-                )}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-2">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <span key={d} className="text-[9px] text-muted-foreground flex-1 text-center">{d}</span>
-            ))}
-          </div>
-        </GlassCard>
+        {/* Quick add buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowIncome(true)}
+            className="h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-semibold text-sm flex items-center justify-center gap-2">
+            <ArrowUpRight className="w-4 h-4" /> Доход
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowExpense(true)}
+            className="h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 text-destructive font-semibold text-sm flex items-center justify-center gap-2">
+            <ArrowDownRight className="w-4 h-4" /> Расход
+          </motion.button>
+        </div>
 
-        {/* Tabs */}
         <ChipGroup options={tabs} selected={tab} onChange={setTab} />
 
-        {/* Transactions */}
-        <div className="space-y-1.5">
-          {filtered.map((txn, i) => (
-            <motion.div key={txn.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-              <GlassCard className="flex items-center gap-3 py-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
-                  txn.type === "income" ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20"
-                )}>
-                  {txn.type === "income" ? (
-                    <ArrowUpRight className="w-4 h-4 text-success" />
-                  ) : (
-                    <ArrowDownRight className="w-4 h-4 text-destructive" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground truncate">{txn.description}</span>
-                    <span className={cn(
-                      "text-sm font-bold shrink-0 ml-2",
-                      txn.type === "income" ? "text-success" : "text-destructive"
-                    )}>
-                      {txn.type === "income" ? "+" : "-"}{formatCurrency(txn.amount)}
-                    </span>
+        {loadingI || loadingE ? (
+          <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-2xl shimmer" />)}</div>
+        ) : !allTransactions.length ? (
+          <EmptyState icon={Wallet} title="Нет операций" description="Добавьте первый доход или расход" />
+        ) : (
+          <div className="space-y-1.5">
+            {allTransactions.map((txn, i) => (
+              <motion.div key={txn.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                <GlassCard className="flex items-center gap-3 py-3" onClick={() => setDeleteTarget({ id: txn.id, type: txn.type })}>
+                  <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
+                    txn.type === "income" ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20")}>
+                    {txn.type === "income" ? <ArrowUpRight className="w-4 h-4 text-success" /> : <ArrowDownRight className="w-4 h-4 text-destructive" />}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{txn.category}</span>
-                    {txn.client && (
-                      <>
-                        <span className="text-[10px] text-muted-foreground">•</span>
-                        <span className="text-[10px] text-muted-foreground">{txn.client}</span>
-                      </>
-                    )}
-                    <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className="text-[10px] text-muted-foreground">{txn.date}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground truncate">{txn.desc}</span>
+                      <span className={cn("text-sm font-bold shrink-0 ml-2", txn.type === "income" ? "text-success" : "text-destructive")}>
+                        {txn.type === "income" ? "+" : "-"}{formatCurrency(txn.amount)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">{txn.category}</span>
+                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">{format(new Date(txn.date), "d MMM, HH:mm", { locale: ru })}</span>
+                    </div>
                   </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-          ))}
-        </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <FloatingActionButton onClick={() => toast.info("Add transaction coming soon")} />
+      {/* Income form */}
+      <AnimatePresence>
+        {showIncome && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowIncome(false)}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-display font-semibold text-foreground">Новый доход</h2>
+                <button onClick={() => setShowIncome(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
+                  <input type="number" value={incomeForm.amount} onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
+                    className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="350 000" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
+                  <select value={incomeForm.client_id} onChange={(e) => setIncomeForm({ ...incomeForm, client_id: e.target.value })}
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
+                    <option value="">Без привязки</option>
+                    {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>
+                  <div className="flex gap-2">
+                    {paymentMethods.map(pm => (
+                      <button key={pm.value} onClick={() => setIncomeForm({ ...incomeForm, payment_method: pm.value })}
+                        className={cn("text-xs px-3 py-1.5 rounded-full transition-all", incomeForm.payment_method === pm.value ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{pm.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
+                  <input value={incomeForm.note} onChange={(e) => setIncomeForm({ ...incomeForm, note: e.target.value })}
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Маникюр + дизайн..." />
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateIncome} disabled={createIncome.isPending}
+                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+                  {createIncome.isPending ? "Сохранение..." : "Записать доход"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Expense form */}
+      <AnimatePresence>
+        {showExpense && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowExpense(false)}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-display font-semibold text-foreground">Новый расход</h2>
+                <button onClick={() => setShowExpense(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
+                  <input type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="150 000" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Категория</label>
+                  <select value={expenseForm.category_id} onChange={(e) => setExpenseForm({ ...expenseForm, category_id: e.target.value })}
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
+                    <option value="">Без категории</option>
+                    {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
+                  <input value={expenseForm.note} onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Материалы, реклама..." />
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateExpense} disabled={createExpense.isPending}
+                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+                  {createExpense.isPending ? "Сохранение..." : "Записать расход"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog open={!!deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)}
+        title="Удалить операцию?" description="Это действие нельзя отменить." />
     </div>
   );
 }
