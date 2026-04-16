@@ -474,6 +474,63 @@ export type Database = {
         }
         Relationships: []
       }
+      timer_sessions: {
+        Row: {
+          appointment_id: string | null
+          client_id: string | null
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          note: string | null
+          owner_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["timer_status"]
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          owner_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["timer_status"]
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          owner_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["timer_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timer_sessions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timer_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visit_photos: {
         Row: {
           caption: string | null
@@ -646,6 +703,7 @@ export type Database = {
         | "preference"
         | "design"
         | "other"
+      timer_status: "running" | "paused" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -793,6 +851,7 @@ export const Constants = {
         "design",
         "other",
       ],
+      timer_status: ["running", "paused", "completed"],
     },
   },
 } as const

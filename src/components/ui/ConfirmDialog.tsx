@@ -11,7 +11,8 @@ import {
 
 interface ConfirmDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  onCancel?: () => void;
   title: string;
   description: string;
   confirmLabel?: string;
@@ -23,15 +24,21 @@ interface ConfirmDialogProps {
 export default function ConfirmDialog({
   open,
   onOpenChange,
+  onCancel,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel = "Подтвердить",
+  cancelLabel = "Отмена",
   onConfirm,
   destructive,
 }: ConfirmDialogProps) {
+  const handleChange = (v: boolean) => {
+    if (!v && onCancel) onCancel();
+    if (onOpenChange) onOpenChange(v);
+  };
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleChange}>
       <AlertDialogContent className="glass-card-elevated max-w-[340px] rounded-3xl mx-auto">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base font-semibold">{title}</AlertDialogTitle>
