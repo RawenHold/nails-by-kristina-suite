@@ -11,7 +11,9 @@ import CalendarPage from "@/pages/CalendarPage";
 import ClientsPage from "@/pages/ClientsPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import GalleryPage from "@/pages/GalleryPage";
+import TimerPage from "@/pages/TimerPage";
 import FinancesPage from "@/pages/FinancesPage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
@@ -21,11 +23,7 @@ const queryClient = new QueryClient();
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
         <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center">
           <Sparkles className="w-8 h-8 text-primary" />
         </div>
@@ -37,7 +35,6 @@ function LoadingScreen() {
 
 function AppRoutes() {
   const { user, loading } = useAuth();
-
   if (loading) return <LoadingScreen />;
   if (!user) return <AuthPage />;
 
@@ -49,7 +46,9 @@ function AppRoutes() {
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/clients/:id" element={<ClientProfilePage />} />
         <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/timer" element={<TimerPage />} />
         <Route path="/finances" element={<FinancesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

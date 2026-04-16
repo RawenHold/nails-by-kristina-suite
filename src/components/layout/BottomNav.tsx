@@ -1,13 +1,14 @@
-import { Home, CalendarDays, Users, Image, Wallet } from "lucide-react";
+import { Home, CalendarDays, Users, Image, Timer, Wallet } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const tabs = [
-  { path: "/", icon: Home, label: "Home" },
-  { path: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { path: "/clients", icon: Users, label: "Clients" },
-  { path: "/gallery", icon: Image, label: "Gallery" },
-  { path: "/finances", icon: Wallet, label: "Finances" },
+  { path: "/", icon: Home, label: "Главная" },
+  { path: "/calendar", icon: CalendarDays, label: "Календарь" },
+  { path: "/clients", icon: Users, label: "Клиенты" },
+  { path: "/gallery", icon: Image, label: "Галерея" },
+  { path: "/timer", icon: Timer, label: "Таймер" },
+  { path: "/finances", icon: Wallet, label: "Финансы" },
 ];
 
 export default function BottomNav() {
@@ -23,26 +24,20 @@ export default function BottomNav() {
             <button
               key={tab.path}
               onClick={() => navigate(tab.path)}
-              className="relative flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors"
+              className="relative flex flex-col items-center justify-center w-14 h-full gap-0.5 transition-colors"
             >
               {isActive && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute top-0 w-8 h-[2.5px] rounded-full bg-primary"
+                  className="absolute top-0 w-7 h-[2.5px] rounded-full bg-primary"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
               <tab.icon
-                className={`w-[22px] h-[22px] transition-colors duration-200 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
+                className={`w-[20px] h-[20px] transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 strokeWidth={isActive ? 2.2 : 1.8}
               />
-              <span
-                className={`text-[10px] font-medium transition-colors duration-200 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
+              <span className={`text-[9px] font-medium transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                 {tab.label}
               </span>
             </button>
