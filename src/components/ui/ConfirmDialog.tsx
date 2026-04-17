@@ -27,10 +27,10 @@ export default function ConfirmDialog({
   onCancel,
   title,
   description,
-  confirmLabel = "Подтвердить",
+  confirmLabel = "Удалить",
   cancelLabel = "Отмена",
   onConfirm,
-  destructive,
+  destructive = true,
 }: ConfirmDialogProps) {
   const handleChange = (v: boolean) => {
     if (!v && onCancel) onCancel();
@@ -39,16 +39,16 @@ export default function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleChange}>
-      <AlertDialogContent className="glass-card-elevated max-w-[340px] rounded-3xl mx-auto">
+      <AlertDialogContent className="glass-card-elevated max-w-[340px] rounded-3xl mx-auto border-glass-border">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-base font-semibold">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-sm">{description}</AlertDialogDescription>
+          <AlertDialogTitle className="text-base font-display font-semibold text-center">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-center text-muted-foreground">{description}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex-row gap-2">
-          <AlertDialogCancel className="flex-1 rounded-xl h-11">{cancelLabel}</AlertDialogCancel>
+        <AlertDialogFooter className="flex-row gap-2 sm:flex-row sm:space-x-0">
+          <AlertDialogCancel className="flex-1 rounded-2xl h-11 m-0">{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className={`flex-1 rounded-xl h-11 ${destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}`}
+            className={`flex-1 rounded-2xl h-11 m-0 ${destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}`}
           >
             {confirmLabel}
           </AlertDialogAction>

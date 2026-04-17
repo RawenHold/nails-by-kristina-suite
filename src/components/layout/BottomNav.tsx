@@ -19,12 +19,13 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {tabs.map((tab) => {
-          const isActive = location.pathname === tab.path;
+          const isActive = location.pathname === tab.path || (tab.path !== "/" && location.pathname.startsWith(tab.path));
           return (
             <button
               key={tab.path}
               onClick={() => navigate(tab.path)}
-              className="relative flex flex-col items-center justify-center w-14 h-full gap-0.5 transition-colors"
+              className="relative flex flex-col items-center justify-center min-w-[44px] h-full gap-0.5 transition-colors"
+              aria-label={tab.label}
             >
               {isActive && (
                 <motion.div
