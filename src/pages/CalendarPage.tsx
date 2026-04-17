@@ -140,7 +140,7 @@ export default function CalendarPage() {
                             <button onClick={() => updateStatus.mutate({ id: apt.id, status: "confirmed" })}
                               className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full active:scale-95">Подтвердить</button>
                           )}
-                          <button onClick={() => updateStatus.mutate({ id: apt.id, status: "completed", final_price: apt.expected_price })}
+                          <button onClick={() => setCompleteTarget(apt)}
                             className="text-[10px] font-semibold text-primary bg-primary/8 px-2.5 py-1 rounded-full active:scale-95 flex items-center gap-1"><Check className="w-3 h-3" />Завершить</button>
                           <button onClick={() => updateStatus.mutate({ id: apt.id, status: "canceled" })}
                             className="text-[10px] font-semibold text-destructive bg-destructive/8 px-2.5 py-1 rounded-full active:scale-95">Отмена</button>

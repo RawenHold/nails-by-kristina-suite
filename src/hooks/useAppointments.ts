@@ -203,7 +203,7 @@ export function useUpdateAppointmentStatus() {
       const { data: apt } = await supabase.from("appointments").select("client_id, status").eq("id", id).single();
 
       // If moving away from completed, reverse income/visit
-      if (apt?.status === "completed" && status !== "completed") {
+      if (apt?.status === "completed") {
         const { data: existingVisits } = await supabase.from("visits").select("id").eq("appointment_id", id);
         if (existingVisits?.length) {
           const ids = existingVisits.map(v => v.id);
