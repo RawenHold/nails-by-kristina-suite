@@ -12,7 +12,7 @@ export function useTimerSessions() {
         .from("timer_sessions")
         .select("*, clients(full_name)")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(100);
       if (error) throw error;
       return data;
     },
@@ -41,6 +41,27 @@ export function useSaveTimerSession() {
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["timer_sessions"] }); toast.success("Сессия сохранена"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteTimerSessions() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[] | "all") => {
+      if (ids === "all") {
+        const { error } = await supabase.from("timer_sessions").delete().eq("owner_id", user!.id);
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase.from("timer_sessions").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["timer_sessions"] });
+      toast.success(vars === "all" ? "История очищена" : "Удалено");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }

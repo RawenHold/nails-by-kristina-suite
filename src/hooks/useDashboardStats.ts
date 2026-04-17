@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
+import { computeReminderStatus } from "./useReminders";
 
 export function useDashboardStats(period: string) {
   const { user } = useAuth();
@@ -17,21 +18,34 @@ export function useDashboardStats(period: string) {
     queryFn: async () => {
       const s = start.toISOString();
       const e = end.toISOString();
+      const todayStr = format(now, "yyyy-MM-dd");
 
-      const [incomesRes, expensesRes, appointmentsRes, clientsRes, remindersRes] = await Promise.all([
+      const [incomesRes, expensesRes, appointmentsRes, clientsRes, remindersRes, completedRes] = await Promise.all([
         supabase.from("incomes").select("amount").gte("received_at", s).lte("received_at", e),
         supabase.from("expenses").select("amount").gte("spent_at", s).lte("spent_at", e),
         supabase.from("appointments").select("id, start_time, end_time, expected_price, status, client_id, clients(full_name)").gte("start_time", startOfDay(now).toISOString()).lte("start_time", endOfDay(now).toISOString()).order("start_time"),
-        supabase.from("clients").select("id, full_name, total_spent, total_visits, lifecycle_status, loyalty_level, last_visit_date, days_since_last_visit").eq("is_archived", false).order("total_spent", { ascending: false }).limit(5),
-        supabase.from("reminders").select("*, clients(full_name, phone)").in("status", ["overdue", "today", "upcoming"]).order("reminder_date"),
+        supabase.from("clients").select("id, full_name, total_spent, total_visits, lifecycle_status, loyalty_level, last_visit_date, days_since_last_visit").eq("is_archived", false).order("total_spent", { ascending: false }).limit(50),
+        // Pull all non-sent reminders so we can recompute statuses client-side
+        supabase.from("reminders").select("*, clients(id, full_name, phone)").neq("status", "sent").order("reminder_date"),
+        supabase.from("appointments").select("final_price, expected_price").eq("status", "completed").gte("start_time", s).lte("start_time", e),
       ]);
 
-      const totalIncome = (incomesRes.data || []).reduce((s, i) => s + i.amount, 0);
-      const totalExpenses = (expensesRes.data || []).reduce((s, e) => s + e.amount, 0);
+      const totalIncome = (incomesRes.data || []).reduce((acc, i) => acc + i.amount, 0);
+      const totalExpenses = (expensesRes.data || []).reduce((acc, e) => acc + e.amount, 0);
       const appointments = appointmentsRes.data || [];
-      const topClients = clientsRes.data || [];
-      const reminders = remindersRes.data || [];
-      const activeClients = topClients.filter(c => c.lifecycle_status === "active" || c.lifecycle_status === "vip").length;
+      const allClients = clientsRes.data || [];
+      const topClients = [...allClients].sort((a, b) => b.total_spent - a.total_spent).slice(0, 5);
+      const reminders = (remindersRes.data || []).map(r => ({
+        ...r,
+        computed_status: computeReminderStatus(r.reminder_date, r.status),
+      }));
+      const order = { overdue: 0, today: 1, upcoming: 2, sent: 3 } as const;
+      reminders.sort((a, b) => order[a.computed_status] - order[b.computed_status]);
+
+      const activeClients = allClients.filter(c => c.lifecycle_status === "active" || c.lifecycle_status === "vip").length;
+      const completedCount = (completedRes.data || []).length;
+      const completedSum = (completedRes.data || []).reduce((acc, a) => acc + (a.final_price ?? a.expected_price), 0);
+      const avgCheck = completedCount > 0 ? Math.round(completedSum / completedCount) : 0;
 
       return {
         totalIncome,
@@ -39,11 +53,14 @@ export function useDashboardStats(period: string) {
         profit: totalIncome - totalExpenses,
         appointmentsToday: appointments,
         topClients,
+        totalClients: allClients.length,
         reminders,
         activeClients,
-        avgCheck: appointments.length > 0 ? Math.round(totalIncome / Math.max(appointments.filter(a => a.status === "completed").length, 1)) : 0,
+        avgCheck,
+        todayStr,
       };
     },
     enabled: !!user,
+    refetchInterval: 60_000,
   });
 }
