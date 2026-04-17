@@ -3,8 +3,8 @@ import BottomNav from "./BottomNav";
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen bg-background max-w-lg mx-auto">
-      <main className="pb-24">
+    <div className="min-h-screen max-w-lg mx-auto relative">
+      <main className="pb-nav">
         <Outlet />
       </main>
       <BottomNav />

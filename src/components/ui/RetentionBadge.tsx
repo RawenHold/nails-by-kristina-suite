@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 const config = {
-  new: { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500", label: "New" },
-  active: { bg: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500", label: "Active" },
-  inactive: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500", label: "Inactive" },
-  lost: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-600 dark:text-red-400", dot: "bg-red-500", label: "Lost" },
+  new: { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500", label: "Новая" },
+  active: { bg: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500", label: "Активная" },
+  inactive: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500", label: "Неактивная" },
+  lost: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-600 dark:text-red-400", dot: "bg-red-500", label: "Потеряна" },
   vip: { bg: "bg-primary/8 dark:bg-primary/15", text: "text-primary", dot: "bg-primary", label: "VIP" },
 };
 

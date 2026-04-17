@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils";
 import { Crown, Award, Star, Medal } from "lucide-react";
 
 const config = {
-  bronze: { icon: Medal, bg: "bg-amber-100/80 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", label: "Bronze" },
-  silver: { icon: Award, bg: "bg-slate-100/80 dark:bg-slate-800/40", text: "text-slate-600 dark:text-slate-300", label: "Silver" },
-  gold: { icon: Star, bg: "bg-amber-50 dark:bg-yellow-900/30", text: "text-amber-600 dark:text-yellow-400", label: "Gold" },
+  bronze: { icon: Medal, bg: "bg-amber-100/80 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", label: "Бронза" },
+  silver: { icon: Award, bg: "bg-slate-100/80 dark:bg-slate-800/40", text: "text-slate-600 dark:text-slate-300", label: "Серебро" },
+  gold: { icon: Star, bg: "bg-amber-50 dark:bg-yellow-900/30", text: "text-amber-600 dark:text-yellow-400", label: "Золото" },
   vip: { icon: Crown, bg: "bg-primary/10", text: "text-primary", label: "VIP" },
 };
 
