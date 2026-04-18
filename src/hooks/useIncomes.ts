@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { startOfMonth, endOfMonth } from "date-fns";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Income = Tables<"incomes"> & { clients?: { full_name: string } | null };
 
@@ -34,7 +34,24 @@ export function useCreateIncome() {
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Доход записан"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & TablesUpdate<"incomes">) => {
+      const { data, error } = await supabase.from("incomes").update(updates).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Доход обновлён");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 
@@ -46,6 +63,6 @@ export function useDeleteIncome() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Доход удалён"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 }
