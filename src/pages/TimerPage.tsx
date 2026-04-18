@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import EmptyState from "@/components/ui/EmptyState";
-import { Timer, Play, Pause, Square, RotateCcw, Clock } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { Timer, Play, Pause, Square, RotateCcw, Clock, Trash2, CheckSquare, Square as SquareIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/useClients";
-import { useTimerSessions, useSaveTimerSession } from "@/hooks/useTimerSessions";
+import { useTimerSessions, useSaveTimerSession, useDeleteTimerSessions } from "@/hooks/useTimerSessions";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -17,12 +18,16 @@ export default function TimerPage() {
   const [elapsed, setElapsed] = useState(0);
   const [clientId, setClientId] = useState("");
   const [note, setNote] = useState("");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmTarget, setConfirmTarget] = useState<"selected" | "all" | string | null>(null);
   const startedAtRef = useRef<string>("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: clients } = useClients();
   const { data: sessions } = useTimerSessions();
   const saveSession = useSaveTimerSession();
+  const deleteSessions = useDeleteTimerSessions();
 
   useEffect(() => {
     if (state === "running") {
@@ -67,6 +72,30 @@ export default function TimerPage() {
     const m = Math.floor((sec % 3600) / 60);
     if (h > 0) return `${h}ч ${m}мин`;
     return `${m}мин`;
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()); };
+
+  const handleConfirmDelete = () => {
+    if (!confirmTarget) return;
+    if (confirmTarget === "all") {
+      deleteSessions.mutate("all");
+    } else if (confirmTarget === "selected") {
+      deleteSessions.mutate(Array.from(selected));
+      exitSelectMode();
+    } else {
+      deleteSessions.mutate([confirmTarget]);
+    }
+    setConfirmTarget(null);
   };
 
   return (
@@ -134,31 +163,105 @@ export default function TimerPage() {
 
         {/* Session History */}
         <div>
-          <h2 className="text-sm font-semibold text-foreground mb-2">История сессий</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-foreground">История сессий</h2>
+            {sessions && sessions.length > 0 && (
+              <div className="flex items-center gap-2">
+                {selectMode ? (
+                  <>
+                    <button
+                      onClick={() => setConfirmTarget("selected")}
+                      disabled={selected.size === 0}
+                      className="text-[11px] font-semibold text-destructive disabled:opacity-40 active:opacity-70"
+                    >
+                      Удалить ({selected.size})
+                    </button>
+                    <button onClick={exitSelectMode} className="text-[11px] font-semibold text-muted-foreground active:opacity-70">
+                      Отмена
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setSelectMode(true)} className="text-[11px] font-semibold text-primary active:opacity-70">
+                      Выбрать
+                    </button>
+                    <button onClick={() => setConfirmTarget("all")} className="text-[11px] font-semibold text-destructive active:opacity-70">
+                      Очистить
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {!sessions?.length ? (
             <EmptyState icon={Clock} title="Нет сессий" description="Запустите таймер для отслеживания" />
           ) : (
             <div className="space-y-1.5">
-              {sessions.map((s: any) => (
-                <GlassCard key={s.id} className="flex items-center gap-3 py-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/8 flex items-center justify-center shrink-0">
-                    <Timer className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground">{s.clients?.full_name || "Без клиентки"}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">{formatDuration(s.duration_seconds)}</span>
-                      <span className="text-[11px] text-muted-foreground">•</span>
-                      <span className="text-[11px] text-muted-foreground">{format(new Date(s.started_at), "d MMM, HH:mm", { locale: ru })}</span>
+              {sessions.map((s) => {
+                const isSelected = selected.has(s.id);
+                return (
+                  <GlassCard
+                    key={s.id}
+                    onClick={selectMode ? () => toggleSelect(s.id) : undefined}
+                    className={cn(
+                      "flex items-center gap-3 py-3 transition-all",
+                      selectMode && isSelected && "ring-2 ring-primary/40"
+                    )}
+                  >
+                    {selectMode ? (
+                      <div className="w-10 h-10 rounded-2xl bg-primary/8 flex items-center justify-center shrink-0">
+                        {isSelected
+                          ? <CheckSquare className="w-4 h-4 text-primary" />
+                          : <SquareIcon className="w-4 h-4 text-muted-foreground" />}
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-primary/8 flex items-center justify-center shrink-0">
+                        <Timer className="w-4 h-4 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground">{s.clients?.full_name || "Без клиентки"}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground">{formatDuration(s.duration_seconds)}</span>
+                        <span className="text-[11px] text-muted-foreground">•</span>
+                        <span className="text-[11px] text-muted-foreground">{format(new Date(s.started_at), "d MMM, HH:mm", { locale: ru })}</span>
+                      </div>
+                      {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
                     </div>
-                    {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
-                  </div>
-                </GlassCard>
-              ))}
+                    {!selectMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmTarget(s.id); }}
+                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                        aria-label="Удалить"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                  </GlassCard>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmTarget(null)}
+        title={
+          confirmTarget === "all" ? "Очистить всю историю?" :
+          confirmTarget === "selected" ? "Удалить выбранные записи?" :
+          "Удалить запись?"
+        }
+        description={
+          confirmTarget === "all"
+            ? "Все сессии таймера будут безвозвратно удалены. Это действие нельзя отменить."
+            : "Это действие нельзя отменить."
+        }
+        confirmLabel={confirmTarget === "all" ? "Очистить всё" : "Удалить"}
+      />
     </div>
   );
 }

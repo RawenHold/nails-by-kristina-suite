@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -7,8 +7,9 @@ import RetentionBadge from "@/components/ui/RetentionBadge";
 import ChipGroup from "@/components/ui/ChipGroup";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { motion, AnimatePresence } from "framer-motion";
-import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, ArrowRight, Image, X, Edit, Archive } from "lucide-react";
+import BottomSheet from "@/components/ui/BottomSheet";
+import { motion } from "framer-motion";
+import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
@@ -19,6 +20,21 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 const tabs = ["Обзор", "История", "Галерея"];
+const shapes = ["Миндаль", "Квадрат", "Овал", "Балерина", "Стилет"];
+const lengths = ["Короткие", "Средние", "Длинные"];
+const lifecycles: { value: "new" | "active" | "inactive" | "lost" | "vip"; label: string }[] = [
+  { value: "new", label: "Новая" },
+  { value: "active", label: "Активная" },
+  { value: "inactive", label: "Неактивная" },
+  { value: "lost", label: "Потерянная" },
+  { value: "vip", label: "VIP" },
+];
+const loyalties: { value: "bronze" | "silver" | "gold" | "vip"; label: string }[] = [
+  { value: "bronze", label: "Бронза" },
+  { value: "silver", label: "Серебро" },
+  { value: "gold", label: "Золото" },
+  { value: "vip", label: "VIP" },
+];
 
 export default function ClientProfilePage() {
   const { id } = useParams();
@@ -27,7 +43,21 @@ export default function ClientProfilePage() {
   const [reminderDate, setReminderDate] = useState("");
   const [reminderNote, setReminderNote] = useState("");
   const [showEdit, setShowEdit] = useState(false);
-  const [showArchive, setShowArchive] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    phone: "",
+    telegram_username: "",
+    notes: "",
+    favorite_shape: "",
+    favorite_length: "",
+    allergies: "",
+    favorite_colors: "",
+    favorite_designs: "",
+    manual_reminder_date: "",
+    lifecycle_status: "active" as "new" | "active" | "inactive" | "lost" | "vip",
+    loyalty_level: "bronze" as "bronze" | "silver" | "gold" | "vip",
+  });
   const navigate = useNavigate();
 
   const { data: client, isLoading } = useClient(id);
@@ -38,6 +68,25 @@ export default function ClientProfilePage() {
   const deleteClient = useDeleteClient();
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
+
+  useEffect(() => {
+    if (client && showEdit) {
+      setEditForm({
+        full_name: client.full_name,
+        phone: client.phone || "",
+        telegram_username: client.telegram_username || "",
+        notes: client.notes || "",
+        favorite_shape: client.favorite_shape || "",
+        favorite_length: client.favorite_length || "",
+        allergies: client.allergies || "",
+        favorite_colors: (client.favorite_colors || []).join(", "),
+        favorite_designs: (client.favorite_designs || []).join(", "),
+        manual_reminder_date: client.manual_reminder_date || "",
+        lifecycle_status: client.lifecycle_status,
+        loyalty_level: client.loyalty_level,
+      });
+    }
+  }, [client, showEdit]);
 
   if (isLoading) return <div className="min-h-screen"><PageHeader title="Загрузка..." showBack /><div className="px-4 space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 rounded-2xl shimmer" />)}</div></div>;
   if (!client) return <div className="min-h-screen"><PageHeader title="Не найдена" showBack /><EmptyState icon={Sparkles} title="Клиентка не найдена" description="" /></div>;
@@ -50,6 +99,26 @@ export default function ClientProfilePage() {
     setShowReminder(false);
     setReminderDate("");
     setReminderNote("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.full_name.trim()) { toast.error("Имя обязательно"); return; }
+    await updateClient.mutateAsync({
+      id: c.id,
+      full_name: editForm.full_name.trim(),
+      phone: editForm.phone || null,
+      telegram_username: editForm.telegram_username || null,
+      notes: editForm.notes || null,
+      favorite_shape: editForm.favorite_shape || null,
+      favorite_length: editForm.favorite_length || null,
+      allergies: editForm.allergies || null,
+      favorite_colors: editForm.favorite_colors ? editForm.favorite_colors.split(",").map(s => s.trim()).filter(Boolean) : null,
+      favorite_designs: editForm.favorite_designs ? editForm.favorite_designs.split(",").map(s => s.trim()).filter(Boolean) : null,
+      manual_reminder_date: editForm.manual_reminder_date || null,
+      lifecycle_status: editForm.lifecycle_status,
+      loyalty_level: editForm.loyalty_level,
+    });
+    setShowEdit(false);
   };
 
   return (
@@ -65,17 +134,23 @@ export default function ClientProfilePage() {
             <LoyaltyBadge level={c.loyalty_level} />
             <RetentionBadge status={c.lifecycle_status} />
           </div>
-          <div className="flex justify-center gap-3 mt-4">
+          <div className="flex justify-center gap-2.5 mt-4 flex-wrap">
             {[
-              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { navigator.clipboard.writeText(c.phone); toast.success("Телефон скопирован"); } } },
+              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { navigator.clipboard.writeText(c.phone); toast.success("Телефон скопирован"); } else toast.error("Телефон не указан"); } },
               { icon: MessageCircle, label: "Telegram", action: () => { if (c.telegram_username) window.open(`https://t.me/${c.telegram_username.replace("@", "")}`, "_blank"); else toast.error("Telegram не указан"); } },
               { icon: CalendarDays, label: "Запись", action: () => navigate("/calendar") },
               { icon: Bell, label: "Напомнить", action: () => setShowReminder(true) },
-              { icon: Archive, label: "Архив", action: () => setShowArchive(true) },
+              { icon: Edit, label: "Изменить", action: () => setShowEdit(true) },
+              { icon: Trash2, label: "Удалить", action: () => setShowDelete(true), destructive: true },
             ].map(a => (
               <button key={a.label} onClick={a.action} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
-                <div className="w-10 h-10 rounded-2xl bg-secondary/70 flex items-center justify-center"><a.icon className="w-4 h-4 text-foreground/70" /></div>
-                <span className="text-[10px] font-medium text-muted-foreground">{a.label}</span>
+                <div className={cn(
+                  "w-10 h-10 rounded-2xl flex items-center justify-center",
+                  a.destructive ? "bg-destructive/10" : "bg-secondary/70"
+                )}>
+                  <a.icon className={cn("w-4 h-4", a.destructive ? "text-destructive" : "text-foreground/70")} />
+                </div>
+                <span className={cn("text-[10px] font-medium", a.destructive ? "text-destructive" : "text-muted-foreground")}>{a.label}</span>
               </button>
             ))}
           </div>
@@ -194,7 +269,7 @@ export default function ClientProfilePage() {
 
         {tab === "Галерея" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {!photos?.length ? <EmptyState icon={Image} title="Нет фото" description="Фотографии появятся после загрузки" /> : (
+            {!photos?.length ? <EmptyState icon={ImageIcon} title="Нет фото" description="Фотографии появятся после загрузки" /> : (
               <div className="grid grid-cols-3 gap-1.5">
                 {photos.map(p => (
                   <div key={p.id} className="aspect-square rounded-xl overflow-hidden">
@@ -208,38 +283,134 @@ export default function ClientProfilePage() {
       </div>
 
       {/* Reminder bottom sheet */}
-      <AnimatePresence>
-        {showReminder && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowReminder(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">Напоминание</h2>
-                <button onClick={() => setShowReminder(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Дата</label>
-                  <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметка</label>
-                  <input value={reminderNote} onChange={(e) => setReminderNote(e.target.value)}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Записать на маникюр..." />
-                </div>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateReminder} disabled={createReminder.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
-                  {createReminder.isPending ? "Сохранение..." : "Создать напоминание"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BottomSheet
+        open={showReminder}
+        onClose={() => setShowReminder(false)}
+        title="Напоминание"
+        footer={
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateReminder} disabled={createReminder.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+            {createReminder.isPending ? "Сохранение..." : "Создать напоминание"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Дата</label>
+            <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметка</label>
+            <input value={reminderNote} onChange={(e) => setReminderNote(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Записать на маникюр..." />
+          </div>
+        </div>
+      </BottomSheet>
 
-      <ConfirmDialog open={showArchive} onConfirm={() => { deleteClient.mutate(c.id); navigate("/clients"); }} onCancel={() => setShowArchive(false)}
-        title="Архивировать?" description="Клиентка будет перемещена в архив" />
+      {/* Edit client bottom sheet */}
+      <BottomSheet
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        title="Редактировать клиентку"
+        footer={
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveEdit} disabled={updateClient.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+            {updateClient.isPending ? "Сохранение..." : "Сохранить изменения"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Имя *</label>
+            <input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Телефон</label>
+              <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="+998..." />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Telegram</label>
+              <input value={editForm.telegram_username} onChange={(e) => setEditForm({ ...editForm, telegram_username: e.target.value })}
+                className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="@username" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Форма</label>
+            <div className="flex flex-wrap gap-2">
+              {shapes.map(s => (
+                <button key={s} type="button" onClick={() => setEditForm({ ...editForm, favorite_shape: editForm.favorite_shape === s ? "" : s })}
+                  className={cn("text-xs px-3 py-1.5 rounded-full transition-all", editForm.favorite_shape === s ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{s}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Длина</label>
+            <div className="flex flex-wrap gap-2">
+              {lengths.map(l => (
+                <button key={l} type="button" onClick={() => setEditForm({ ...editForm, favorite_length: editForm.favorite_length === l ? "" : l })}
+                  className={cn("text-xs px-3 py-1.5 rounded-full transition-all", editForm.favorite_length === l ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Любимые цвета</label>
+            <input value={editForm.favorite_colors} onChange={(e) => setEditForm({ ...editForm, favorite_colors: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Розовый, нюд, бордо..." />
+            <p className="text-[10px] text-muted-foreground mt-1">Через запятую</p>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Любимые дизайны</label>
+            <input value={editForm.favorite_designs} onChange={(e) => setEditForm({ ...editForm, favorite_designs: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Френч, омбре..." />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Аллергии</label>
+            <input value={editForm.allergies} onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметки</label>
+            <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2}
+              className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none resize-none" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Дата напоминания</label>
+            <input type="date" value={editForm.manual_reminder_date} onChange={(e) => setEditForm({ ...editForm, manual_reminder_date: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Статус</label>
+            <div className="flex flex-wrap gap-2">
+              {lifecycles.map(l => (
+                <button key={l.value} type="button" onClick={() => setEditForm({ ...editForm, lifecycle_status: l.value })}
+                  className={cn("text-xs px-3 py-1.5 rounded-full transition-all", editForm.lifecycle_status === l.value ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{l.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Лояльность</label>
+            <div className="flex flex-wrap gap-2">
+              {loyalties.map(l => (
+                <button key={l.value} type="button" onClick={() => setEditForm({ ...editForm, loyalty_level: l.value })}
+                  className={cn("text-xs px-3 py-1.5 rounded-full transition-all", editForm.loyalty_level === l.value ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{l.label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <ConfirmDialog
+        open={showDelete}
+        onConfirm={() => { deleteClient.mutate(c.id); setShowDelete(false); navigate("/clients"); }}
+        onCancel={() => setShowDelete(false)}
+        title="Удалить клиентку?"
+        description="Все визиты, фото, записи, доходы и напоминания этой клиентки будут безвозвратно удалены. Это действие нельзя отменить."
+        confirmLabel="Удалить навсегда"
+      />
     </div>
   );
 }

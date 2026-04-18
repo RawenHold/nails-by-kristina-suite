@@ -2,17 +2,18 @@ import { useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
-import FloatingActionButton from "@/components/ui/FloatingActionButton";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { ArrowUpRight, ArrowDownRight, Wallet, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import BottomSheet from "@/components/ui/BottomSheet";
+import MonthYearPicker from "@/components/ui/MonthYearPicker";
+import { ArrowUpRight, ArrowDownRight, Wallet, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIncomes, useCreateIncome, useDeleteIncome } from "@/hooks/useIncomes";
 import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseCategories } from "@/hooks/useExpenses";
 import { useClients } from "@/hooks/useClients";
-import { format, addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 const tabs = ["Обзор", "Доходы", "Расходы"];
@@ -22,13 +23,15 @@ const paymentMethods = [
   { value: "transfer", label: "Перевод" },
 ];
 
+type PaymentMethod = "cash" | "card" | "transfer" | "other";
+
 export default function FinancesPage() {
   const [month, setMonth] = useState(new Date());
   const [tab, setTab] = useState("Обзор");
   const [showIncome, setShowIncome] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "income" | "expense" } | null>(null);
-  const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash", note: "" });
+  const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash" as PaymentMethod, note: "" });
   const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
 
   const { data: incomes, isLoading: loadingI } = useIncomes(month);
@@ -50,7 +53,7 @@ export default function FinancesPage() {
     await createIncome.mutateAsync({
       amount,
       client_id: incomeForm.client_id || null,
-      payment_method: incomeForm.payment_method as any,
+      payment_method: incomeForm.payment_method,
       note: incomeForm.note || null,
       received_at: new Date().toISOString(),
     });
@@ -87,18 +90,7 @@ export default function FinancesPage() {
     <div className="min-h-screen">
       <PageHeader title="Финансы" subtitle="Учёт доходов и расходов" />
       <div className="px-4 space-y-3 pb-4">
-        {/* Month selector */}
-        <div className="flex items-center justify-center gap-4">
-          <button onClick={() => setMonth(m => subMonths(m, 1))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform">
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <span className="text-sm font-semibold text-foreground min-w-[140px] text-center">
-            {format(month, "LLLL yyyy", { locale: ru })}
-          </span>
-          <button onClick={() => setMonth(m => addMonths(m, 1))} className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform">
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
+        <MonthYearPicker value={month} onChange={setMonth} />
 
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center py-3">
@@ -115,7 +107,6 @@ export default function FinancesPage() {
           </GlassCard>
         </div>
 
-        {/* Quick add buttons */}
         <div className="grid grid-cols-2 gap-2">
           <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowIncome(true)}
             className="h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-semibold text-sm flex items-center justify-center gap-2">
@@ -137,7 +128,7 @@ export default function FinancesPage() {
           <div className="space-y-1.5">
             {allTransactions.map((txn, i) => (
               <motion.div key={txn.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <GlassCard className="flex items-center gap-3 py-3" onClick={() => setDeleteTarget({ id: txn.id, type: txn.type })}>
+                <GlassCard className="flex items-center gap-3 py-3">
                   <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
                     txn.type === "income" ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20")}>
                     {txn.type === "income" ? <ArrowUpRight className="w-4 h-4 text-success" /> : <ArrowDownRight className="w-4 h-4 text-destructive" />}
@@ -155,6 +146,13 @@ export default function FinancesPage() {
                       <span className="text-[10px] text-muted-foreground">{format(new Date(txn.date), "d MMM, HH:mm", { locale: ru })}</span>
                     </div>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: txn.id, type: txn.type }); }}
+                    className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                    aria-label="Удалить"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
                 </GlassCard>
               </motion.div>
             ))}
@@ -163,94 +161,98 @@ export default function FinancesPage() {
       </div>
 
       {/* Income form */}
-      <AnimatePresence>
-        {showIncome && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowIncome(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">Новый доход</h2>
-                <button onClick={() => setShowIncome(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
-                  <input type="number" value={incomeForm.amount} onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
-                    className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="350 000" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
-                  <select value={incomeForm.client_id} onChange={(e) => setIncomeForm({ ...incomeForm, client_id: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
-                    <option value="">Без привязки</option>
-                    {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>
-                  <div className="flex gap-2">
-                    {paymentMethods.map(pm => (
-                      <button key={pm.value} onClick={() => setIncomeForm({ ...incomeForm, payment_method: pm.value })}
-                        className={cn("text-xs px-3 py-1.5 rounded-full transition-all", incomeForm.payment_method === pm.value ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{pm.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-                  <input value={incomeForm.note} onChange={(e) => setIncomeForm({ ...incomeForm, note: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Маникюр + дизайн..." />
-                </div>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateIncome} disabled={createIncome.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
-                  {createIncome.isPending ? "Сохранение..." : "Записать доход"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BottomSheet
+        open={showIncome}
+        onClose={() => setShowIncome(false)}
+        title="Новый доход"
+        footer={
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCreateIncome}
+            disabled={createIncome.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {createIncome.isPending ? "Сохранение..." : "Записать доход"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
+            <input type="number" inputMode="numeric" value={incomeForm.amount} onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
+              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="350 000" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
+            <select value={incomeForm.client_id} onChange={(e) => setIncomeForm({ ...incomeForm, client_id: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
+              <option value="">Без привязки</option>
+              {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>
+            <div className="flex gap-2 flex-wrap">
+              {paymentMethods.map(pm => (
+                <button key={pm.value} onClick={() => setIncomeForm({ ...incomeForm, payment_method: pm.value as PaymentMethod })}
+                  className={cn("text-xs px-3 py-1.5 rounded-full transition-all", incomeForm.payment_method === pm.value ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>{pm.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
+            <input value={incomeForm.note} onChange={(e) => setIncomeForm({ ...incomeForm, note: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Маникюр + дизайн..." />
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Expense form */}
-      <AnimatePresence>
-        {showExpense && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowExpense(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">Новый расход</h2>
-                <button onClick={() => setShowExpense(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
-                  <input type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                    className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="150 000" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Категория</label>
-                  <select value={expenseForm.category_id} onChange={(e) => setExpenseForm({ ...expenseForm, category_id: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
-                    <option value="">Без категории</option>
-                    {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-                  <input value={expenseForm.note} onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Материалы, реклама..." />
-                </div>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateExpense} disabled={createExpense.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
-                  {createExpense.isPending ? "Сохранение..." : "Записать расход"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BottomSheet
+        open={showExpense}
+        onClose={() => setShowExpense(false)}
+        title="Новый расход"
+        footer={
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCreateExpense}
+            disabled={createExpense.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {createExpense.isPending ? "Сохранение..." : "Записать расход"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
+            <input type="number" inputMode="numeric" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="150 000" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Категория</label>
+            <select value={expenseForm.category_id} onChange={(e) => setExpenseForm({ ...expenseForm, category_id: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
+              <option value="">Без категории</option>
+              {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
+            <input value={expenseForm.note} onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Материалы, реклама..." />
+          </div>
+        </div>
+      </BottomSheet>
 
-      <ConfirmDialog open={!!deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)}
-        title="Удалить операцию?" description="Это действие нельзя отменить." />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        title="Удалить операцию?"
+        description="Это действие нельзя отменить. Финансовые итоги будут пересчитаны."
+        confirmLabel="Удалить"
+      />
     </div>
   );
 }
