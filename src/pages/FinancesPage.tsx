@@ -6,12 +6,12 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import MonthYearPicker from "@/components/ui/MonthYearPicker";
-import { ArrowUpRight, ArrowDownRight, Wallet, Trash2 } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { useIncomes, useCreateIncome, useDeleteIncome } from "@/hooks/useIncomes";
-import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseCategories } from "@/hooks/useExpenses";
+import { cn, formatMoney, parseMoney } from "@/lib/utils";
+import { useIncomes, useCreateIncome, useUpdateIncome, useDeleteIncome, type Income } from "@/hooks/useIncomes";
+import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense, useExpenseCategories, type Expense } from "@/hooks/useExpenses";
 import { useClients } from "@/hooks/useClients";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -30,6 +30,8 @@ export default function FinancesPage() {
   const [tab, setTab] = useState("Обзор");
   const [showIncome, setShowIncome] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
+  const [editIncome, setEditIncome] = useState<Income | null>(null);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "income" | "expense" } | null>(null);
   const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash" as PaymentMethod, note: "" });
   const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
@@ -39,39 +41,89 @@ export default function FinancesPage() {
   const { data: categories } = useExpenseCategories();
   const { data: clients } = useClients();
   const createIncome = useCreateIncome();
+  const updateIncomeMut = useUpdateIncome();
   const createExpense = useCreateExpense();
+  const updateExpenseMut = useUpdateExpense();
   const deleteIncome = useDeleteIncome();
   const deleteExpense = useDeleteExpense();
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
   const totalIncome = (incomes || []).reduce((s, i) => s + i.amount, 0);
   const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
-  const handleCreateIncome = async () => {
-    const amount = parseInt(incomeForm.amount);
-    if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
-    await createIncome.mutateAsync({
-      amount,
-      client_id: incomeForm.client_id || null,
-      payment_method: incomeForm.payment_method,
-      note: incomeForm.note || null,
-      received_at: new Date().toISOString(),
-    });
-    setShowIncome(false);
+  const openCreateIncome = () => {
+    setEditIncome(null);
     setIncomeForm({ amount: "", client_id: "", payment_method: "cash", note: "" });
+    setShowIncome(true);
+  };
+  const openEditIncome = (inc: Income) => {
+    setEditIncome(inc);
+    setIncomeForm({
+      amount: formatMoney(inc.amount),
+      client_id: inc.client_id || "",
+      payment_method: inc.payment_method as PaymentMethod,
+      note: inc.note || "",
+    });
+    setShowIncome(true);
+  };
+  const openCreateExpense = () => {
+    setEditExpense(null);
+    setExpenseForm({ amount: "", category_id: "", note: "" });
+    setShowExpense(true);
+  };
+  const openEditExpense = (exp: Expense) => {
+    setEditExpense(exp);
+    setExpenseForm({
+      amount: formatMoney(exp.amount),
+      category_id: exp.category_id || "",
+      note: exp.note || "",
+    });
+    setShowExpense(true);
   };
 
-  const handleCreateExpense = async () => {
-    const amount = parseInt(expenseForm.amount);
+  const handleSaveIncome = async () => {
+    const amount = parseMoney(incomeForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
-    await createExpense.mutateAsync({
-      amount,
-      category_id: expenseForm.category_id || null,
-      note: expenseForm.note || null,
-      spent_at: new Date().toISOString(),
-    });
+    if (editIncome) {
+      await updateIncomeMut.mutateAsync({
+        id: editIncome.id,
+        amount,
+        client_id: incomeForm.client_id || null,
+        payment_method: incomeForm.payment_method,
+        note: incomeForm.note || null,
+      });
+    } else {
+      await createIncome.mutateAsync({
+        amount,
+        client_id: incomeForm.client_id || null,
+        payment_method: incomeForm.payment_method,
+        note: incomeForm.note || null,
+        received_at: new Date().toISOString(),
+      });
+    }
+    setShowIncome(false);
+    setEditIncome(null);
+  };
+
+  const handleSaveExpense = async () => {
+    const amount = parseMoney(expenseForm.amount);
+    if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    if (editExpense) {
+      await updateExpenseMut.mutateAsync({
+        id: editExpense.id,
+        amount,
+        category_id: expenseForm.category_id || null,
+        note: expenseForm.note || null,
+      });
+    } else {
+      await createExpense.mutateAsync({
+        amount,
+        category_id: expenseForm.category_id || null,
+        note: expenseForm.note || null,
+        spent_at: new Date().toISOString(),
+      });
+    }
     setShowExpense(false);
-    setExpenseForm({ amount: "", category_id: "", note: "" });
+    setEditExpense(null);
   };
 
   const handleDelete = () => {
@@ -82,37 +134,37 @@ export default function FinancesPage() {
   };
 
   const allTransactions = [
-    ...(tab !== "Расходы" ? (incomes || []).map(i => ({ ...i, type: "income" as const, date: i.received_at, desc: i.note || "Оплата", category: i.clients?.full_name || "Клиент" })) : []),
-    ...(tab !== "Доходы" ? (expenses || []).map(e => ({ ...e, type: "expense" as const, date: e.spent_at, desc: e.note || "Расход", category: e.expense_categories?.name || "Другое" })) : []),
+    ...(tab !== "Расходы" ? (incomes || []).map(i => ({ raw: i as Income | Expense, id: i.id, amount: i.amount, type: "income" as const, date: i.received_at, desc: i.note || "Оплата", category: i.clients?.full_name || "Клиент", linked: !!i.appointment_id })) : []),
+    ...(tab !== "Доходы" ? (expenses || []).map(e => ({ raw: e as Income | Expense, id: e.id, amount: e.amount, type: "expense" as const, date: e.spent_at, desc: e.note || "Расход", category: e.expense_categories?.name || "Другое", linked: false })) : []),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="min-h-screen">
       <PageHeader title="Финансы" subtitle="Учёт доходов и расходов" />
-      <div className="px-4 space-y-3 pb-4">
+      <div className="px-4 space-y-3 pb-nav">
         <MonthYearPicker value={month} onChange={setMonth} />
 
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center py-3">
             <p className="text-[10px] text-muted-foreground mb-0.5">Доходы</p>
-            <p className="text-sm font-bold text-success">{formatCurrency(totalIncome)}</p>
+            <p className="text-sm font-bold text-success">{formatMoney(totalIncome)}</p>
           </GlassCard>
           <GlassCard className="text-center py-3">
             <p className="text-[10px] text-muted-foreground mb-0.5">Расходы</p>
-            <p className="text-sm font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
+            <p className="text-sm font-bold text-destructive">{formatMoney(totalExpenses)}</p>
           </GlassCard>
           <GlassCard className="text-center py-3">
             <p className="text-[10px] text-muted-foreground mb-0.5">Прибыль</p>
-            <p className="text-sm font-bold text-foreground">{formatCurrency(totalIncome - totalExpenses)}</p>
+            <p className="text-sm font-bold text-foreground">{formatMoney(totalIncome - totalExpenses)}</p>
           </GlassCard>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowIncome(true)}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={openCreateIncome}
             className="h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-semibold text-sm flex items-center justify-center gap-2">
             <ArrowUpRight className="w-4 h-4" /> Доход
           </motion.button>
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowExpense(true)}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={openCreateExpense}
             className="h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 text-destructive font-semibold text-sm flex items-center justify-center gap-2">
             <ArrowDownRight className="w-4 h-4" /> Расход
           </motion.button>
@@ -137,22 +189,38 @@ export default function FinancesPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-foreground truncate">{txn.desc}</span>
                       <span className={cn("text-sm font-bold shrink-0 ml-2", txn.type === "income" ? "text-success" : "text-destructive")}>
-                        {txn.type === "income" ? "+" : "-"}{formatCurrency(txn.amount)}
+                        {txn.type === "income" ? "+" : "-"}{formatMoney(txn.amount)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-[10px] text-muted-foreground">{txn.category}</span>
                       <span className="text-[10px] text-muted-foreground">•</span>
                       <span className="text-[10px] text-muted-foreground">{format(new Date(txn.date), "d MMM, HH:mm", { locale: ru })}</span>
+                      {txn.linked && <span className="text-[10px] text-primary">• из записи</span>}
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: txn.id, type: txn.type }); }}
-                    className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
-                    aria-label="Удалить"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!txn.linked && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (txn.type === "income") openEditIncome(txn.raw as Income);
+                          else openEditExpense(txn.raw as Expense);
+                        }}
+                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                        aria-label="Редактировать"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: txn.id, type: txn.type }); }}
+                      className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                      aria-label="Удалить"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
                 </GlassCard>
               </motion.div>
             ))}
@@ -160,27 +228,32 @@ export default function FinancesPage() {
         )}
       </div>
 
-      {/* Income form */}
+      {/* Income form (create / edit) */}
       <BottomSheet
         open={showIncome}
-        onClose={() => setShowIncome(false)}
-        title="Новый доход"
+        onClose={() => { setShowIncome(false); setEditIncome(null); }}
+        title={editIncome ? "Редактировать доход" : "Новый доход"}
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={handleCreateIncome}
-            disabled={createIncome.isPending}
+            onClick={handleSaveIncome}
+            disabled={createIncome.isPending || updateIncomeMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
           >
-            {createIncome.isPending ? "Сохранение..." : "Записать доход"}
+            {(createIncome.isPending || updateIncomeMut.isPending) ? "Сохранение..." : (editIncome ? "Сохранить" : "Записать доход")}
           </motion.button>
         }
       >
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
-            <input type="number" inputMode="numeric" value={incomeForm.amount} onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
-              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="350 000" />
+            <input
+              inputMode="numeric"
+              value={incomeForm.amount}
+              onChange={(e) => setIncomeForm({ ...incomeForm, amount: formatMoney(parseMoney(e.target.value)) })}
+              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="350 000"
+            />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
@@ -207,27 +280,32 @@ export default function FinancesPage() {
         </div>
       </BottomSheet>
 
-      {/* Expense form */}
+      {/* Expense form (create / edit) */}
       <BottomSheet
         open={showExpense}
-        onClose={() => setShowExpense(false)}
-        title="Новый расход"
+        onClose={() => { setShowExpense(false); setEditExpense(null); }}
+        title={editExpense ? "Редактировать расход" : "Новый расход"}
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={handleCreateExpense}
-            disabled={createExpense.isPending}
+            onClick={handleSaveExpense}
+            disabled={createExpense.isPending || updateExpenseMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
           >
-            {createExpense.isPending ? "Сохранение..." : "Записать расход"}
+            {(createExpense.isPending || updateExpenseMut.isPending) ? "Сохранение..." : (editExpense ? "Сохранить" : "Записать расход")}
           </motion.button>
         }
       >
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма (сум) *</label>
-            <input type="number" inputMode="numeric" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="150 000" />
+            <input
+              inputMode="numeric"
+              value={expenseForm.amount}
+              onChange={(e) => setExpenseForm({ ...expenseForm, amount: formatMoney(parseMoney(e.target.value)) })}
+              className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="150 000"
+            />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Категория</label>

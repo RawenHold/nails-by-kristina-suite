@@ -54,11 +54,29 @@ export function useCreateAppointment() {
   });
 }
 
+/**
+ * Update an appointment. If `payment` is supplied AND the appointment is/becomes "completed",
+ * the linked income + visit are re-synced (no duplicates) so finances stay consistent.
+ */
 export function useUpdateAppointment() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, service_ids, ...updates }: { id: string; service_ids?: { id: string; price: number }[] } & TablesUpdate<"appointments">) => {
-      const { data, error } = await supabase.from("appointments").update(updates).eq("id", id).select().single();
+    mutationFn: async ({
+      id,
+      service_ids,
+      payment,
+      ...updates
+    }: {
+      id: string;
+      service_ids?: { id: string; price: number }[];
+      payment?: { paid_amount: number; payment_method: "cash" | "card" | "transfer" | "other"; note?: string };
+    } & TablesUpdate<"appointments">) => {
+      // If payment provided, force final_price to match
+      if (payment) {
+        updates.final_price = payment.paid_amount;
+      }
+      const { data, error } = await supabase.from("appointments").update(updates).eq("id", id).select("*, clients(full_name), appointment_services(id, price, services(name))").single();
       if (error) throw error;
 
       if (service_ids) {
@@ -69,10 +87,55 @@ export function useUpdateAppointment() {
           );
         }
       }
+
+      // Re-sync linked income / visit if appointment is completed
+      const isCompleted = (updates.status ?? data.status) === "completed";
+      if (payment && isCompleted && data.client_id) {
+        // Reverse any existing visit/income for this appointment
+        const { data: existingVisits } = await supabase.from("visits").select("id").eq("appointment_id", id);
+        if (existingVisits?.length) {
+          const ids = existingVisits.map(v => v.id);
+          await supabase.from("visit_photos").delete().in("visit_id", ids);
+          await supabase.from("visits").delete().in("id", ids);
+        }
+        await supabase.from("incomes").delete().eq("appointment_id", id);
+
+        const serviceNames = data.appointment_services?.map((s: { services?: { name?: string } }) => s.services?.name).filter(Boolean) as string[];
+
+        const { data: visit, error: visitErr } = await supabase.from("visits").insert({
+          owner_id: user!.id,
+          client_id: data.client_id,
+          appointment_id: id,
+          visit_date: new Date().toISOString(),
+          services_performed: serviceNames,
+          total_price: payment.paid_amount,
+          payment_method: payment.payment_method,
+          payment_received: true,
+        }).select().single();
+        if (visitErr) throw visitErr;
+
+        const { error: incomeErr } = await supabase.from("incomes").insert({
+          owner_id: user!.id,
+          client_id: data.client_id,
+          appointment_id: id,
+          visit_id: visit.id,
+          amount: payment.paid_amount,
+          payment_method: payment.payment_method,
+          note: payment.note || null,
+          received_at: new Date().toISOString(),
+        });
+        if (incomeErr) throw incomeErr;
+
+        await recalculateClientStats(data.client_id);
+      }
+
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["visits"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Запись обновлена");
     },

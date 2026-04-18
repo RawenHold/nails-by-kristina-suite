@@ -10,7 +10,7 @@ import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatMoney, parseMoney } from "@/lib/utils";
 import { useAppointments, useCreateAppointment, useUpdateAppointmentStatus, useUpdateAppointment, useCompleteAppointment, useDeleteAppointment, type Appointment } from "@/hooks/useAppointments";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
@@ -25,7 +25,20 @@ const statusColors: Record<string, string> = {
 const statusDot: Record<string, string> = { planned: "bg-blue-500", confirmed: "bg-emerald-500", completed: "bg-muted-foreground", canceled: "bg-destructive", no_show: "bg-warning" };
 const statusLabels: Record<string, string> = { planned: "План", confirmed: "Подтв.", completed: "Готово", canceled: "Отмена", no_show: "Неявка" };
 
-const emptyForm = { client_id: "", start_hour: "10", start_min: "00", end_hour: "11", end_min: "30", notes: "", selectedServices: [] as { id: string; price: number; name: string }[] };
+type PaymentMethod = "cash" | "card" | "transfer" | "other";
+
+const emptyForm = {
+  client_id: "",
+  start_hour: "10",
+  start_min: "00",
+  end_hour: "11",
+  end_min: "30",
+  notes: "",
+  selectedServices: [] as { id: string; price: number; name: string }[],
+  // payment fields (used only when editing a completed appointment)
+  paid_amount: "",
+  payment_method: "cash" as PaymentMethod,
+};
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -33,7 +46,7 @@ export default function CalendarPage() {
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as "cash" | "card" | "transfer", note: "" });
+  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as PaymentMethod, note: "" });
   const [form, setForm] = useState(emptyForm);
 
   const { data: appointments, isLoading } = useAppointments(currentDate);
@@ -47,8 +60,8 @@ export default function CalendarPage() {
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
   const expectedPrice = form.selectedServices.reduce((s, sv) => s + sv.price, 0);
+  const isCompletedEdit = editing?.status === "completed";
 
   const openEdit = (apt: Appointment) => {
     const start = new Date(apt.start_time);
@@ -62,6 +75,8 @@ export default function CalendarPage() {
       end_min: end.getMinutes().toString().padStart(2, "0"),
       notes: apt.notes || "",
       selectedServices: (apt.appointment_services || []).map(s => ({ id: s.service_id, price: s.price, name: s.services?.name || "" })),
+      paid_amount: apt.final_price != null ? formatMoney(apt.final_price) : "",
+      payment_method: "cash",
     });
     setShowForm(true);
   };
@@ -74,6 +89,15 @@ export default function CalendarPage() {
     if (endTime <= startTime) { toast.error("Время окончания должно быть позже начала"); return; }
 
     if (editing) {
+      const payment = isCompletedEdit
+        ? (() => {
+            const amt = parseMoney(form.paid_amount);
+            if (!amt || amt <= 0) { toast.error("Укажите сумму оплаты"); return null; }
+            return { paid_amount: amt, payment_method: form.payment_method };
+          })()
+        : undefined;
+      if (isCompletedEdit && !payment) return;
+
       await updateAppointment.mutateAsync({
         id: editing.id,
         client_id: form.client_id || null,
@@ -82,6 +106,7 @@ export default function CalendarPage() {
         expected_price: expectedPrice,
         notes: form.notes || null,
         service_ids: form.selectedServices.map(s => ({ id: s.id, price: s.price })),
+        ...(payment ? { payment } : {}),
       });
     } else {
       await createAppointment.mutateAsync({
@@ -108,12 +133,12 @@ export default function CalendarPage() {
   const openComplete = (apt: Appointment) => {
     if (!apt.client_id) { toast.error("Сначала укажите клиентку"); return; }
     setCompleteTarget(apt);
-    setPaymentForm({ amount: apt.expected_price.toString(), method: "cash", note: "" });
+    setPaymentForm({ amount: formatMoney(apt.expected_price), method: "cash", note: "" });
   };
 
   const handleComplete = async () => {
     if (!completeTarget) return;
-    const amount = parseInt(paymentForm.amount);
+    const amount = parseMoney(paymentForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     await completeAppointment.mutateAsync({
       appointment_id: completeTarget.id,
@@ -127,7 +152,7 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen">
       <PageHeader title="Календарь" subtitle={format(currentDate, "EEEE, d MMMM", { locale: ru })} />
-      <div className="px-4 space-y-3 pt-2">
+      <div className="px-4 space-y-3 pt-2 pb-nav">
         <div className="flex items-center gap-1.5">
           <button onClick={() => setCurrentDate(d => addDays(d, -7))} className="w-9 h-9 rounded-2xl glass-button flex items-center justify-center shrink-0 active:scale-90">
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
@@ -156,7 +181,7 @@ export default function CalendarPage() {
           <GlassCard elevated className="py-3">
             <div className="flex justify-between text-center">
               <div><p className="text-lg font-bold text-foreground">{appointments.length}</p><p className="text-[10px] text-muted-foreground">Клиентов</p></div>
-              <div><p className="text-lg font-bold text-foreground">{formatCurrency(appointments.reduce((s, a) => s + a.expected_price, 0))}</p><p className="text-[10px] text-muted-foreground">Ожидается</p></div>
+              <div><p className="text-lg font-bold text-foreground">{formatMoney(appointments.reduce((s, a) => s + a.expected_price, 0))}</p><p className="text-[10px] text-muted-foreground">Ожидается</p></div>
             </div>
           </GlassCard>
         )}
@@ -188,8 +213,8 @@ export default function CalendarPage() {
                       )}
                       <p className="text-xs font-semibold text-primary">
                         {apt.status === "completed" && apt.final_price != null
-                          ? `${formatCurrency(apt.final_price)} сум · оплачено`
-                          : `${formatCurrency(apt.expected_price)} сум`}
+                          ? `${formatMoney(apt.final_price)} сум · оплачено`
+                          : `${formatMoney(apt.expected_price)} сум`}
                       </p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {apt.status !== "completed" && apt.status !== "canceled" && (
@@ -271,7 +296,7 @@ export default function CalendarPage() {
                 return (
                   <button key={svc.id} onClick={() => toggleService(svc)}
                     className={cn("text-xs px-3 py-1.5 rounded-full transition-all", selected ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>
-                    {svc.name} · {formatCurrency(svc.default_price)}
+                    {svc.name} · {formatMoney(svc.default_price)}
                   </button>
                 );
               })}
@@ -281,7 +306,35 @@ export default function CalendarPage() {
           {expectedPrice > 0 && (
             <div className="text-center p-3 rounded-2xl bg-primary/5">
               <p className="text-xs text-muted-foreground">Ожидаемая стоимость</p>
-              <p className="text-lg font-bold text-primary">{formatCurrency(expectedPrice)} сум</p>
+              <p className="text-lg font-bold text-primary">{formatMoney(expectedPrice)} сум</p>
+            </div>
+          )}
+          {isCompletedEdit && (
+            <div className="space-y-3 pt-2 border-t border-glass-border">
+              <p className="text-[11px] font-semibold text-primary uppercase">Оплата</p>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма оплаты (сум) *</label>
+                <input
+                  inputMode="numeric"
+                  value={form.paid_amount}
+                  onChange={(e) => setForm({ ...form, paid_amount: formatMoney(parseMoney(e.target.value)) })}
+                  className="input-glass h-12 text-lg font-bold"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([{v:"cash",l:"Наличные"},{v:"card",l:"На карту"}] as const).map(p => (
+                    <button key={p.v} onClick={() => setForm({ ...form, payment_method: p.v as PaymentMethod })}
+                      className={cn("h-11 rounded-2xl text-sm font-semibold transition-all",
+                        form.payment_method === p.v ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground")}>
+                      {p.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Изменение оплаты автоматически обновит запись в Финансах.</p>
             </div>
           )}
           <div>
@@ -310,8 +363,13 @@ export default function CalendarPage() {
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Сумма оплаты (сум) *</label>
-              <input type="number" inputMode="numeric" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                className="input-glass h-12 text-lg font-bold" placeholder="0" />
+              <input
+                inputMode="numeric"
+                value={paymentForm.amount}
+                onChange={(e) => setPaymentForm({ ...paymentForm, amount: formatMoney(parseMoney(e.target.value)) })}
+                className="input-glass h-12 text-lg font-bold"
+                placeholder="0"
+              />
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>

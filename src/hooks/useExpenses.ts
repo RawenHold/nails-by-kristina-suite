@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { startOfMonth, endOfMonth } from "date-fns";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Expense = Tables<"expenses"> & { expense_categories?: { name: string } | null };
 
@@ -47,7 +47,24 @@ export function useCreateExpense() {
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Расход записан"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateExpense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & TablesUpdate<"expenses">) => {
+      const { data, error } = await supabase.from("expenses").update(updates).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Расход обновлён");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 
@@ -61,7 +78,7 @@ export function useCreateExpenseCategory() {
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория добавлена"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 
@@ -73,6 +90,6 @@ export function useDeleteExpense() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Расход удалён"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 }
