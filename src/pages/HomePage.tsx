@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, CalendarDays, Bell, Wallet, UserPlus, DollarSign, ArrowRight, AlertCircle, Repeat, Settings, Check, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn, formatMoney } from "@/lib/utils";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUpdateReminderStatus } from "@/hooks/useReminders";
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
@@ -39,7 +39,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { data: stats } = useDashboardStats(periodMap[period]);
   const markSent = useUpdateReminderStatus();
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
+  const formatCurrency = formatMoney;
 
   useEffect(() => {
     const t = setInterval(() => setGreeting(getGreeting()), 60_000);

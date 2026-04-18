@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useClients, useCreateClient, useDeleteClient } from "@/hooks/useClients";
+import { formatMoney } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const filters = ["Все", "VIP", "Активные", "Неактивные", "Потерянные", "Новые"];
@@ -32,7 +33,7 @@ export default function ClientsPage() {
   const createClient = useCreateClient();
   const deleteClient = useDeleteClient();
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
+  const formatCurrency = formatMoney;
 
   const handleCreate = async () => {
     if (!form.full_name.trim()) { toast.error("Укажите имя клиентки"); return; }

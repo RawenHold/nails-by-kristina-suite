@@ -100,7 +100,7 @@ export default function SettingsPage() {
               {services?.map(s => (
                 <div key={s.id} className="flex items-center justify-between py-1.5">
                   <span className="text-xs text-foreground">{s.name}</span>
-                  <span className="text-[11px] text-muted-foreground">{new Intl.NumberFormat("uz-UZ").format(s.default_price)} сум · {s.duration_minutes} мин</span>
+                  <span className="text-[11px] text-muted-foreground">{formatMoney(s.default_price)} сум · {s.duration_minutes} мин</span>
                 </div>
               ))}
             </div>

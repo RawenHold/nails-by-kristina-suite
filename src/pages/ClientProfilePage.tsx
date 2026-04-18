@@ -11,7 +11,7 @@ import BottomSheet from "@/components/ui/BottomSheet";
 import { motion } from "framer-motion";
 import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatMoney } from "@/lib/utils";
 import { useClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
 import { useVisits } from "@/hooks/useVisits";
 import { usePhotos } from "@/hooks/usePhotos";
@@ -67,7 +67,7 @@ export default function ClientProfilePage() {
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat("uz-UZ").format(val);
+  const formatCurrency = formatMoney;
 
   useEffect(() => {
     if (client && showEdit) {
