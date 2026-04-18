@@ -10,7 +10,7 @@ import { useMessageTemplates, useCreateMessageTemplate } from "@/hooks/useMessag
 import { Sun, Moon, Monitor, LogOut, Plus, Sparkles, Wrench, Tag, MessageSquare, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatMoney } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
