@@ -5,7 +5,7 @@ import StatCard from "@/components/ui/StatCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import EmptyState from "@/components/ui/EmptyState";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, CalendarDays, Bell, Wallet, UserPlus, DollarSign, ArrowRight, AlertCircle, Repeat, Settings, Check, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, CalendarDays, Bell, Wallet, UserPlus, DollarSign, ArrowRight, Repeat, Check, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn, formatMoney } from "@/lib/utils";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
