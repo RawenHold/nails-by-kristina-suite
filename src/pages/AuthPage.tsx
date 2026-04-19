@@ -3,8 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { lovable } from "@/integrations/lovable";
-import { signInWithGoogle, signInWithApple } from "@/lib/nativeAuth";
 import logo from "@/assets/logo-wide.svg";
 
 export default function AuthPage() {
@@ -26,12 +24,7 @@ export default function AuthPage() {
         toast.success("С возвращением! 💅");
       } else {
         await signUp(email, password);
-        toast.success("Письмо с подтверждением отправлено", {
-          description: `Проверьте почту ${email} и перейдите по ссылке, чтобы завершить регистрацию.`,
-          duration: 8000,
-        });
-        setPassword("");
-        setIsLogin(true);
+        toast.success("Аккаунт создан! 💅");
       }
     } catch (err: any) {
       toast.error(err.message || "Что-то пошло не так");
