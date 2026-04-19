@@ -130,21 +130,37 @@
   body::before {
     content: "";
     position: fixed;
-    inset: 0;
+    inset: -10%;
     z-index: -2;
     background:
-      radial-gradient(at 20% 15%, hsl(var(--mesh-1)) 0px, transparent 50%),
-      radial-gradient(at 80% 10%, hsl(var(--mesh-3)) 0px, transparent 50%),
-      radial-gradient(at 75% 85%, hsl(var(--mesh-4)) 0px, transparent 50%),
-      radial-gradient(at 15% 90%, hsl(var(--mesh-2)) 0px, transparent 50%);
+      radial-gradient(at 18% 12%, hsl(var(--mesh-1)) 0px, transparent 55%),
+      radial-gradient(at 82% 8%, hsl(var(--mesh-3)) 0px, transparent 55%),
+      radial-gradient(at 78% 88%, hsl(var(--mesh-4)) 0px, transparent 55%),
+      radial-gradient(at 12% 92%, hsl(var(--mesh-2)) 0px, transparent 55%);
     background-color: hsl(var(--background));
-    animation: meshDrift 24s ease-in-out infinite alternate;
+    animation: meshDrift 28s ease-in-out infinite alternate;
     pointer-events: none;
+    filter: blur(2px);
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(at 50% 50%, hsl(var(--primary) / 0.04) 0px, transparent 70%);
+    pointer-events: none;
+    animation: glowPulse 12s ease-in-out infinite alternate;
   }
   @keyframes meshDrift {
-    0%   { transform: translate3d(0,0,0) scale(1); }
-    50%  { transform: translate3d(-2%, 1%, 0) scale(1.05); }
-    100% { transform: translate3d(2%, -1%, 0) scale(1.02); }
+    0%   { transform: translate3d(0,0,0) scale(1) rotate(0deg); }
+    33%  { transform: translate3d(-3%, 2%, 0) scale(1.06) rotate(0.5deg); }
+    66%  { transform: translate3d(2%, -2%, 0) scale(1.03) rotate(-0.5deg); }
+    100% { transform: translate3d(3%, -1%, 0) scale(1.04) rotate(0.3deg); }
+  }
+  @keyframes glowPulse {
+    0%   { opacity: 0.6; }
+    100% { opacity: 1; }
   }
   h1, h2, h3, h4 {
     font-family: 'Playfair Display', Georgia, serif;
