@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
+import { signInWithGoogle } from "@/lib/nativeAuth";
 import logo from "@/assets/logo.svg";
 
 export default function AuthPage() {
@@ -86,7 +87,7 @@ export default function AuthPage() {
           whileTap={{ scale: 0.97 }}
           type="button"
           onClick={async () => {
-            const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+            const result = await signInWithGoogle();
             if (result.error) toast.error("Не удалось войти через Google");
           }}
           className="w-full h-12 rounded-2xl bg-card border border-border text-foreground font-semibold text-sm flex items-center justify-center gap-2.5 active:opacity-80"
