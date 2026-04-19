@@ -62,7 +62,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen pb-6">
       <PageHeader title="Настройки" showBack />
-      <div className="px-4 space-y-4">
+      <div className="px-4 space-y-4 pb-nav">
         {/* Profile */}
         <GlassCard elevated className="flex items-center gap-3 py-3">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
