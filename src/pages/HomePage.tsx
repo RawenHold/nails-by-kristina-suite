@@ -55,7 +55,6 @@ export default function HomePage() {
     { icon: CalendarDays, label: "Запись", color: "bg-blue-50 dark:bg-blue-900/20", action: () => navigate("/calendar") },
     { icon: DollarSign, label: "Доход", color: "bg-emerald-50 dark:bg-emerald-900/20", action: () => navigate("/finances") },
     { icon: TrendingDown, label: "Расход", color: "bg-amber-50 dark:bg-amber-900/20", action: () => navigate("/finances") },
-    { icon: Settings, label: "Ещё", color: "bg-purple-50 dark:bg-purple-900/20", action: () => navigate("/settings") },
   ];
 
   return (
