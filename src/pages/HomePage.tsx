@@ -60,7 +60,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <PageHeader title="Nails by Kristina" subtitle={`${greeting}, Кристина ✨`} />
-      <div className="px-4 space-y-4 pt-2">
+      <div className="px-4 space-y-4 pt-2 pb-nav">
         <ChipGroup options={periods} selected={period} onChange={setPeriod} />
 
         <div className="grid grid-cols-2 gap-2.5">
