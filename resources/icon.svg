@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Creator: CorelDRAW 2026 -->
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="512px" height="512px" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+viewBox="0 0 22.62 22.62"
+ xmlns:xlink="http://www.w3.org/1999/xlink"
+ xmlns:xodm="http://www.corel.com/coreldraw/odm/2003">
+ <defs>
+  <style type="text/css">
+   <![CDATA[
+    .fil1 {fill:#FEFEFE;fill-rule:nonzero}
+    .fil0 {fill:url(#id0)}
+   ]]>
+  </style>
+  <radialGradient id="id0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(2.35982 0.375812 -0.500239 3.24788 1 -22)" cx="2.94" cy="9.27" r="11.31" fx="2.94" fy="9.27">
+   <stop offset="0" style="stop-opacity:1; stop-color:#AA00BA"/>
+   <stop offset="0.25098" style="stop-opacity:1; stop-color:#BF19B4"/>
+   <stop offset="0.431373" style="stop-opacity:1; stop-color:#FE4230"/>
+   <stop offset="0.54902" style="stop-opacity:1; stop-color:#FE529A"/>
+   <stop offset="0.741176" style="stop-opacity:1; stop-color:#DD67EE"/>
+   <stop offset="0.94902" style="stop-opacity:1; stop-color:#4B73FF"/>
+   <stop offset="1" style="stop-opacity:1; stop-color:#4B73FF"/>
+  </radialGradient>
+ </defs>
+ <g id="Слой_x0020_1">
+  <metadata id="CorelCorpID_0Corel-Layer"/>
+  <g id="_595826489584">
+   <path class="fil0" d="M0 15.83c0,-3.75 3,-6.79 6.69,-6.79l2.54 0 0 -2.25c0,-3.75 3,-6.79 6.7,-6.79 3.69,0 6.69,3.04 6.69,6.79l0 15.83 -15.93 0c-3.69,0 -6.69,-3.04 -6.69,-6.79z"/>
+   <path class="fil1" d="M14.25 22.62l0 -2.22c0,-1.31 -0.22,-1.87 -1.99,-3.15 -0.32,-0.23 0.22,-0.32 0.88,-0.35 1,0 1.97,0 1.97,0 0.96,0 2.03,0.34 2.21,1.44 0.23,1.5 0.18,4.28 0.18,4.28l3.23 0c0.09,-0.86 0.07,-1.73 -0.03,-2.58 -0.09,-0.84 -0.24,-1.65 -0.69,-2.38 -0.2,-0.33 -0.44,-0.61 -0.71,-0.83 -0.84,-0.7 -1.95,-0.9 -3.1,-0.71 -0.25,0.03 -1.66,0.37 -1.7,-0.08 0.09,-0.82 6.37,0.24 6.37,-7l-3.34 0c0.23,4.81 -3.28,6.77 -3.28,6.13l0 -6.13 -3.34 0 0 13.58 3.34 0z"/>
+  </g>
+ </g>
+</svg>

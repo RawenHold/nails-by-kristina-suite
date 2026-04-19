@@ -26,7 +26,12 @@ export default function AuthPage() {
         toast.success("С возвращением! 💅");
       } else {
         await signUp(email, password);
-        toast.success("Аккаунт создан! Проверьте почту для подтверждения.");
+        toast.success("Письмо с подтверждением отправлено", {
+          description: `Проверьте почту ${email} и перейдите по ссылке, чтобы завершить регистрацию.`,
+          duration: 8000,
+        });
+        setPassword("");
+        setIsLogin(true);
       }
     } catch (err: any) {
       toast.error(err.message || "Что-то пошло не так");
