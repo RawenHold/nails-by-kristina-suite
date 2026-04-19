@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
+import { signInWithGoogle } from "@/lib/nativeAuth";
 import logo from "@/assets/logo.svg";
 
 export default function AuthPage() {
@@ -51,7 +52,7 @@ export default function AuthPage() {
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Электронная почта</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary/20 transition placeholder:text-muted-foreground/50"
-              placeholder="kristina@example.com" required autoComplete="email" />
+              placeholder="you@example.com" required autoComplete="email" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Пароль</label>
@@ -86,7 +87,7 @@ export default function AuthPage() {
           whileTap={{ scale: 0.97 }}
           type="button"
           onClick={async () => {
-            const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+            const result = await signInWithGoogle();
             if (result.error) toast.error("Не удалось войти через Google");
           }}
           className="w-full h-12 rounded-2xl bg-card border border-border text-foreground font-semibold text-sm flex items-center justify-center gap-2.5 active:opacity-80"

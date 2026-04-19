@@ -59,7 +59,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader title="Nails by Kristina" subtitle={`${greeting}, Кристина ✨`} />
+      <PageHeader title="K Nails Finance" subtitle={`${greeting} ✨`} />
       <div className="px-4 space-y-4 pt-2 pb-nav">
         <ChipGroup options={periods} selected={period} onChange={setPeriod} />
 

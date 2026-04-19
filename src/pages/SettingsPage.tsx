@@ -69,7 +69,7 @@ export default function SettingsPage() {
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Nails by Kristina</p>
+            <p className="text-sm font-semibold text-foreground">K Nails Finance</p>
             <p className="text-[11px] text-muted-foreground">{user?.email}</p>
           </div>
         </GlassCard>
