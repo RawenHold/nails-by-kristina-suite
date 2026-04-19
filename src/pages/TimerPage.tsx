@@ -101,7 +101,7 @@ export default function TimerPage() {
   return (
     <div className="min-h-screen">
       <PageHeader title="Таймер" subtitle="Отслеживание времени" />
-      <div className="px-4 space-y-4 pb-4">
+      <div className="px-4 space-y-4 pb-nav">
         {/* Timer Display */}
         <GlassCard elevated className="text-center py-8">
           <motion.div animate={{ scale: state === "running" ? [1, 1.02, 1] : 1 }} transition={{ repeat: state === "running" ? Infinity : 0, duration: 2 }}>
