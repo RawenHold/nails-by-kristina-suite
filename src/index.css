@@ -197,58 +197,6 @@
     border-top: 0.5px solid hsl(var(--glass-border));
     box-shadow: 0 -8px 32px rgba(0,0,0,0.08), inset 0 1px 0 hsl(var(--glass-highlight));
   }
-  .liquid-nav {
-    position: relative;
-    background: hsl(var(--glass-strong));
-    backdrop-filter: blur(40px) saturate(240%);
-    -webkit-backdrop-filter: blur(40px) saturate(240%);
-    border-top: 0.5px solid hsl(var(--glass-border));
-    box-shadow:
-      0 -10px 40px rgba(0,0,0,0.10),
-      0 -1px 0 hsl(var(--glass-highlight)),
-      inset 0 1px 0 hsl(var(--glass-highlight));
-    overflow: hidden;
-    isolation: isolate;
-  }
-  .liquid-nav::before {
-    content: "";
-    position: absolute;
-    inset: -50% -20%;
-    z-index: -1;
-    background:
-      radial-gradient(40% 60% at 20% 50%, hsl(var(--primary) / 0.22), transparent 70%),
-      radial-gradient(35% 55% at 70% 40%, hsl(var(--accent) / 0.18), transparent 70%),
-      radial-gradient(30% 50% at 90% 70%, hsl(var(--primary-glow) / 0.20), transparent 70%);
-    filter: blur(22px);
-    animation: liquidDrift 14s ease-in-out infinite alternate;
-    pointer-events: none;
-    opacity: 0.85;
-  }
-  .liquid-nav::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(105deg,
-      transparent 0%,
-      transparent 35%,
-      hsl(var(--glass-highlight)) 50%,
-      transparent 65%,
-      transparent 100%);
-    background-size: 250% 100%;
-    animation: liquidShine 7s linear infinite;
-    pointer-events: none;
-    mix-blend-mode: overlay;
-  }
-  @keyframes liquidDrift {
-    0%   { transform: translate3d(0,0,0) scale(1); }
-    50%  { transform: translate3d(8%, -4%, 0) scale(1.08); }
-    100% { transform: translate3d(-6%, 3%, 0) scale(1.05); }
-  }
-  @keyframes liquidShine {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
   .glass-header {
     background: hsl(var(--glass-strong));
     backdrop-filter: blur(36px) saturate(220%);
