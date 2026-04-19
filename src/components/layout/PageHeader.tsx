@@ -17,7 +17,7 @@ export default function PageHeader({ title, subtitle, action, showBack, hideSett
   const isSettings = location.pathname === "/settings";
 
   return (
-    <div className="sticky top-0 z-40 glass-header px-4 safe-top pb-3">
+    <div className="sticky top-0 z-40 glass-header px-4 safe-top pb-4 mb-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {showBack && (

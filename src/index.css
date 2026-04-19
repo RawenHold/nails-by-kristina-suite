@@ -199,9 +199,10 @@
   }
   .glass-header {
     background: hsl(var(--glass-strong));
-    backdrop-filter: blur(36px) saturate(220%);
-    -webkit-backdrop-filter: blur(36px) saturate(220%);
+    backdrop-filter: blur(40px) saturate(220%);
+    -webkit-backdrop-filter: blur(40px) saturate(220%);
     border-bottom: 0.5px solid hsl(var(--glass-border));
+    box-shadow: 0 6px 24px hsl(var(--background) / 0.35), inset 0 1px 0 hsl(var(--glass-highlight));
   }
   .glass-sheet {
     background: hsl(var(--popover) / 0.94);
@@ -228,7 +229,8 @@
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
   }
   .safe-top {
-    padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+    /* Generous top padding so header never collides with status bar / notch */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
   }
   .pb-nav {
     /* fixed bottom nav (~64px) + safe area + comfortable breathing room */
