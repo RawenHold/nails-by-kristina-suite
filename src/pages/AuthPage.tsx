@@ -5,7 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable";
 import { signInWithGoogle } from "@/lib/nativeAuth";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/logo-wide.svg";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -40,10 +40,9 @@ export default function AuthPage() {
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-sm">
         <div className="text-center mb-10">
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}
-            className="w-24 h-24 flex items-center justify-center mx-auto mb-5">
+            className="w-full max-w-[260px] h-20 flex items-center justify-center mx-auto mb-4">
             <img src={logo} alt="K Nails Finance" className="w-full h-full object-contain drop-shadow-lg" />
           </motion.div>
-          <h1 className="text-2xl font-display font-semibold text-foreground tracking-tight">K Nails Finance</h1>
           <p className="text-sm text-muted-foreground mt-1.5">Ваша премиум бьюти-система</p>
         </div>
 
