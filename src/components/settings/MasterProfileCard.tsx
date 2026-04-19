@@ -6,6 +6,21 @@ import { useMasterProfile, useUpsertMasterProfile, useUploadMasterAvatar } from 
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+const toInstagramUrl = (value: string) => {
+  const normalized = value.trim().replace(/^@/, "");
+  if (!normalized) return null;
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  return `https://instagram.com/${normalized}`;
+};
+
+const toTelegramUrl = (value: string) => {
+  const normalized = value.trim().replace(/^@/, "");
+  if (!normalized) return null;
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  if (/^\+?\d+$/.test(normalized)) return `https://t.me/${normalized.replace(/^\+/, "")}`;
+  return `https://t.me/${normalized}`;
+};
+
 export default function MasterProfileCard() {
   const { user } = useAuth();
   const { data: profile } = useMasterProfile();
@@ -57,6 +72,8 @@ export default function MasterProfileCard() {
 
   const name = profile?.display_name || "Ваше имя";
   const initials = (profile?.display_name || user?.email || "?").trim().charAt(0).toUpperCase();
+  const instagramUrl = profile?.instagram ? toInstagramUrl(profile.instagram) : null;
+  const telegramUrl = profile?.telegram ? toTelegramUrl(profile.telegram) : null;
 
   return (
     <>
@@ -90,14 +107,26 @@ export default function MasterProfileCard() {
                 </span>
               )}
               {profile?.instagram && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/70 rounded-full px-2 py-0.5">
+                <a
+                  href={instagramUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/70 rounded-full px-2 py-0.5 transition-opacity active:opacity-70"
+                  aria-label="Открыть Instagram"
+                >
                   <Instagram className="w-2.5 h-2.5" /> @{profile.instagram}
-                </span>
+                </a>
               )}
               {profile?.telegram && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/70 rounded-full px-2 py-0.5">
+                <a
+                  href={telegramUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/70 rounded-full px-2 py-0.5 transition-opacity active:opacity-70"
+                  aria-label="Открыть Telegram"
+                >
                   <Send className="w-2.5 h-2.5" /> @{profile.telegram}
-                </span>
+                </a>
               )}
             </div>
           </div>
@@ -114,7 +143,7 @@ export default function MasterProfileCard() {
         {open && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40"
+            className="fixed inset-0 z-[60] bg-black/40"
             onClick={() => setOpen(false)}
           >
             <motion.div
