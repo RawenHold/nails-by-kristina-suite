@@ -30,7 +30,7 @@ export default function BottomNav() {
               {isActive && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute top-0 w-7 h-[2.5px] rounded-full bg-primary"
+                  className="absolute top-0 w-8 h-[3px] rounded-full bg-gradient-to-r from-primary via-primary-glow to-accent nav-active-glow"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
