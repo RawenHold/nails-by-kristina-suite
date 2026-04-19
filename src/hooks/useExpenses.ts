@@ -82,6 +82,30 @@ export function useCreateExpenseCategory() {
   });
 }
 
+export function useUpdateExpenseCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from("expense_categories").update({ name }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория обновлена"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteExpenseCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("expense_categories").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория удалена"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useDeleteExpense() {
   const qc = useQueryClient();
   return useMutation({
