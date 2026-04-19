@@ -5,41 +5,34 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { getAuthRedirectUrl } from "@/lib/deepLinkAuth";
 
-/**
- * Sign in with Google.
- * - On web: standard redirect via Lovable managed OAuth.
- * - On native (iOS/Android via Capacitor): opens OAuth flow in an in-app
- *   system browser tab and listens for deep-link return to close it.
- *
- * Requires the lovable OAuth callback URL to redirect back to the app's
- * web origin (which Capacitor serves locally) — the session tokens are
- * picked up by supabase.auth automatically on return.
- */
-export async function signInWithGoogle(): Promise<{ error?: Error }> {
-  const isNative = Capacitor.isNativePlatform();
+type OAuthProvider = "google" | "apple";
 
+/**
+ * Sign in with a managed OAuth provider (Google / Apple).
+ * - On web: standard redirect via Lovable managed OAuth.
+ * - On native (iOS/Android via Capacitor): opens the OAuth flow in an
+ *   in-app system browser tab and listens for the deep-link return to
+ *   close the tab and pick up the session tokens.
+ */
+async function signInWithProvider(provider: OAuthProvider): Promise<{ error?: Error }> {
+  const isNative = Capacitor.isNativePlatform();
   const redirectUri = getAuthRedirectUrl();
 
   if (!isNative) {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: redirectUri,
-    });
+    const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: redirectUri });
     if (result.error) return { error: result.error as Error };
     return {};
   }
 
-  // Native flow — intercept the redirect to open it inside an in-app browser.
   return new Promise((resolve) => {
     let listenerHandle: { remove: () => Promise<void> } | null = null;
 
-    // Listen for the app being reopened via deep link after OAuth completes.
     App.addListener("appUrlOpen", async (event) => {
       try {
         await Browser.close();
       } catch {
         /* noop */
       }
-      // The URL may contain the session in the hash (#access_token=...).
       const url = new URL(event.url);
       const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
       const params = new URLSearchParams(hash);
@@ -54,17 +47,14 @@ export async function signInWithGoogle(): Promise<{ error?: Error }> {
       listenerHandle = handle;
     });
 
-    // Kick off the OAuth flow — open initiate URL in in-app browser.
-    lovable.auth
-      .signInWithOAuth("google", { redirect_uri: redirectUri })
-      .then(async (result) => {
-        if (result.error) {
-          if (listenerHandle) await (listenerHandle as any).remove();
-          resolve({ error: result.error as Error });
-        }
-        // If the SDK already redirected via window.location, Capacitor's
-        // WebView will navigate — we let it; the appUrlOpen listener
-        // handles the return.
-      });
+    lovable.auth.signInWithOAuth(provider, { redirect_uri: redirectUri }).then(async (result) => {
+      if (result.error) {
+        if (listenerHandle) await (listenerHandle as any).remove();
+        resolve({ error: result.error as Error });
+      }
+    });
   });
 }
+
+export const signInWithGoogle = () => signInWithProvider("google");
+export const signInWithApple = () => signInWithProvider("apple");
