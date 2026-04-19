@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthRedirectUrl, initDeepLinkAuth } from "@/lib/deepLinkAuth";
 
 interface AuthContextType {
   session: Session | null;
@@ -31,6 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
+    // Initialize native deep-link listener for auth callbacks (email
+    // confirmation links, OAuth returns) — no-op on web.
+    initDeepLinkAuth();
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -40,7 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: getAuthRedirectUrl() },
+    });
     if (error) throw error;
   };
 
