@@ -301,6 +301,15 @@
   .nav-active-glow {
     box-shadow: 0 0 16px hsl(var(--primary) / 0.6), 0 0 4px hsl(var(--primary));
   }
+  /* Ensure content sits above ::before gradient overlays */
+  .glass-card > *,
+  .glass-card-elevated > *,
+  .glass-nav > *,
+  .glass-header > *,
+  .glass-button > * {
+    position: relative;
+    z-index: 1;
+  }
   .text-display {
     font-family: 'Playfair Display', Georgia, serif;
   }
