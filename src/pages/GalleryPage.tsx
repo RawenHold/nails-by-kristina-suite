@@ -4,6 +4,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import EmptyState from "@/components/ui/EmptyState";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
+import BottomSheet from "@/components/ui/BottomSheet";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { Image, Heart, X, ChevronLeft, ChevronRight, Star, Trash2, Download, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -148,32 +149,31 @@ export default function GalleryPage() {
       </AnimatePresence>
 
       {/* Upload sheet */}
-      <AnimatePresence>
-        {showUpload && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowUpload(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Загрузить фото</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Визит</label>
-                  <select value={uploadVisitId} onChange={(e) => setUploadVisitId(e.target.value)}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="">Выберите визит</option>
-                    {visits?.map(v => <option key={v.id} value={v.id}>{v.clients?.full_name} — {new Date(v.visit_date).toLocaleDateString("ru-RU")}</option>)}
-                  </select>
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => { if (!uploadVisitId) { toast.error("Выберите визит"); return; } fileRef.current?.click(); }}
-                  disabled={uploadPhoto.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2">
-                  <Upload className="w-4 h-4" /> {uploadPhoto.isPending ? "Загрузка..." : "Выбрать фото"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BottomSheet
+        open={showUpload}
+        onClose={() => setShowUpload(false)}
+        title="Загрузить фото"
+        footer={
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => { if (!uploadVisitId) { toast.error("Выберите визит"); return; } fileRef.current?.click(); }}
+            disabled={uploadPhoto.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2">
+            <Upload className="w-4 h-4" /> {uploadPhoto.isPending ? "Загрузка..." : "Выбрать фото"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Визит</label>
+            <select value={uploadVisitId} onChange={(e) => setUploadVisitId(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <option value="">Выберите визит</option>
+              {visits?.map(v => <option key={v.id} value={v.id}>{v.clients?.full_name} — {new Date(v.visit_date).toLocaleDateString("ru-RU")}</option>)}
+            </select>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+          <p className="text-[11px] text-muted-foreground">Можно выбрать несколько фото сразу.</p>
+        </div>
+      </BottomSheet>
 
       <ConfirmDialog open={!!deleteTarget} onConfirm={() => { if (deleteTarget) { deletePhoto.mutate(deleteTarget); setSelectedIndex(null); } setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)} title="Удалить фото?" description="Фото будет удалено безвозвратно." />

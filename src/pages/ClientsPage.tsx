@@ -3,6 +3,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
+import BottomSheet from "@/components/ui/BottomSheet";
 import EmptyState from "@/components/ui/EmptyState";
 import LoyaltyBadge from "@/components/ui/LoyaltyBadge";
 import RetentionBadge from "@/components/ui/RetentionBadge";
@@ -106,68 +107,63 @@ export default function ClientsPage() {
       </div>
 
       {/* Create form bottom sheet */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowForm(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto safe-bottom">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">Новая клиентка</h2>
-                <button onClick={() => setShowForm(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Имя *</label>
-                  <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Анна Каримова" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Телефон</label>
-                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="+998 90 123 4567" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Telegram</label>
-                  <input value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="@username" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Форма ногтей</label>
-                  <div className="flex flex-wrap gap-2">
-                    {shapes.map(s => (
-                      <button key={s} onClick={() => setForm({ ...form, favorite_shape: form.favorite_shape === s ? "" : s })}
-                        className={`text-xs px-3 py-1.5 rounded-full transition-all ${form.favorite_shape === s ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground"}`}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Длина</label>
-                  <div className="flex flex-wrap gap-2">
-                    {lengths.map(l => (
-                      <button key={l} onClick={() => setForm({ ...form, favorite_length: form.favorite_length === l ? "" : l })}
-                        className={`text-xs px-3 py-1.5 rounded-full transition-all ${form.favorite_length === l ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground"}`}>{l}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Аллергии</label>
-                  <input value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Чувствительность к материалам..." />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметки</label>
-                  <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
-                    className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Любые заметки..." />
-                </div>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate} disabled={createClient.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
-                  {createClient.isPending ? "Сохранение..." : "Добавить клиентку"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BottomSheet
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        title="Новая клиентка"
+        footer={
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate} disabled={createClient.isPending}
+            className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+            {createClient.isPending ? "Сохранение..." : "Добавить клиентку"}
+          </motion.button>
+        }
+      >
+        <div className="space-y-3 pb-2">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Имя *</label>
+            <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Анна Каримова" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Телефон</label>
+            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="+998 90 123 4567" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Telegram</label>
+            <input value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="@username" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Форма ногтей</label>
+            <div className="flex flex-wrap gap-2">
+              {shapes.map(s => (
+                <button key={s} onClick={() => setForm({ ...form, favorite_shape: form.favorite_shape === s ? "" : s })}
+                  className={`text-xs px-3 py-1.5 rounded-full transition-all ${form.favorite_shape === s ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground"}`}>{s}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Длина</label>
+            <div className="flex flex-wrap gap-2">
+              {lengths.map(l => (
+                <button key={l} onClick={() => setForm({ ...form, favorite_length: form.favorite_length === l ? "" : l })}
+                  className={`text-xs px-3 py-1.5 rounded-full transition-all ${form.favorite_length === l ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-secondary-foreground"}`}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Аллергии</label>
+            <input value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Чувствительность к материалам..." />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметки</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
+              className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Любые заметки..." />
+          </div>
+        </div>
+      </BottomSheet>
 
       <ConfirmDialog open={!!deleteId} onConfirm={() => { if (deleteId) deleteClient.mutate(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)} title="Архивировать клиентку?" description="Клиентка будет перемещена в архив." />
