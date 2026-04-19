@@ -340,6 +340,42 @@ export type Database = {
           },
         ]
       }
+      master_profile: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          instagram: string | null
+          owner_id: string
+          phone: string | null
+          telegram: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          instagram?: string | null
+          owner_id: string
+          phone?: string | null
+          telegram?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          instagram?: string | null
+          owner_id?: string
+          phone?: string | null
+          telegram?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_templates: {
         Row: {
           body: string
