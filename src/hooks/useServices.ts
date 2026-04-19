@@ -44,3 +44,15 @@ export function useUpdateService() {
     onError: (e: any) => toast.error(e.message),
   });
 }
+
+export function useDeleteService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("services").update({ is_active: false }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["services"] }); toast.success("Услуга удалена"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
