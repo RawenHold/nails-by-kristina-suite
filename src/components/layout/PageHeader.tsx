@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { ArrowLeft, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import logo from "@/assets/logo.svg";
 
 interface PageHeaderProps {
   title: string;
@@ -27,6 +28,9 @@ export default function PageHeader({ title, subtitle, action, showBack, hideSett
             >
               <ArrowLeft className="w-4 h-4 text-foreground" />
             </button>
+          )}
+          {!showBack && (
+            <img src={logo} alt="K Nails Finance" className="w-8 h-8 shrink-0 drop-shadow-sm" />
           )}
           <div className="min-w-0">
             <h1 className="text-lg font-semibold text-foreground text-display truncate leading-tight">{title}</h1>
