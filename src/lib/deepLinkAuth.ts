@@ -4,37 +4,37 @@ import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Custom URL scheme used for deep-linking back into the native app
- * (e.g. from email-confirmation links and OAuth redirects).
+ * Native app scheme and HTTPS bridge used for auth callbacks.
  *
- * When Supabase sends auth emails, the confirmation link will use this
- * scheme so tapping it opens the app directly instead of a browser.
+ * Lovable Cloud only accepts HTTPS redirect URLs, so native auth flows first
+ * land on the published `/auth/callback` route and that page immediately
+ * forwards the payload into the app via `knailsfinance://auth/callback`.
  *
  * Native config required (one-time, after `npx cap add`):
  *  - iOS:     ios/App/App/Info.plist  → CFBundleURLTypes → CFBundleURLSchemes: ["knailsfinance"]
  *  - Android: android/app/src/main/AndroidManifest.xml → <intent-filter> with
  *             <data android:scheme="knailsfinance" />
- *  - Lovable Cloud → Auth → URL Configuration → add to Redirect URLs:
- *             knailsfinance://auth/callback
  */
 export const APP_URL_SCHEME = "knailsfinance";
 export const AUTH_CALLBACK_URL = `${APP_URL_SCHEME}://auth/callback`;
+export const PUBLISHED_AUTH_BRIDGE_URL = "https://k-nails-finance.lovable.app/auth/callback";
 
 /**
  * Returns the correct redirect URL for auth flows depending on platform.
- * - Native (iOS/Android): custom scheme → opens app directly from email/browser.
+ * - Native (iOS/Android): published HTTPS bridge on the lovable.app domain.
  * - Web: current origin → standard browser flow.
  */
 export function getAuthRedirectUrl(): string {
-  return Capacitor.isNativePlatform() ? AUTH_CALLBACK_URL : window.location.origin;
+  return Capacitor.isNativePlatform()
+    ? `${PUBLISHED_AUTH_BRIDGE_URL}?native=1`
+    : window.location.origin;
 }
 
 /**
- * Parses an incoming deep-link URL and, if it carries Supabase auth tokens
- * (either in the hash fragment after email confirmation/OAuth, or as a
- * `code` query param for PKCE), establishes the session.
+ * Consumes an auth callback URL and establishes the session when tokens or a
+ * PKCE code are present.
  */
-async function handleAuthDeepLink(rawUrl: string): Promise<boolean> {
+export async function consumeAuthCallbackUrl(rawUrl: string): Promise<boolean> {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -42,7 +42,6 @@ async function handleAuthDeepLink(rawUrl: string): Promise<boolean> {
     return false;
   }
 
-  // Implicit flow / OAuth: tokens delivered in URL hash.
   const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
   if (hash) {
     const params = new URLSearchParams(hash);
@@ -54,7 +53,6 @@ async function handleAuthDeepLink(rawUrl: string): Promise<boolean> {
     }
   }
 
-  // PKCE flow: ?code=... in the query string.
   const code = url.searchParams.get("code");
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -69,9 +67,6 @@ let listenerInitialized = false;
 /**
  * Initializes a global listener for deep-link callbacks (auth confirmation,
  * OAuth return, etc.). Safe to call once at app startup.
- *
- * No-op on web — there the standard URL-based session detection in
- * supabase-js handles the redirect on page load.
  */
 export async function initDeepLinkAuth(): Promise<void> {
   if (listenerInitialized) return;
@@ -79,12 +74,16 @@ export async function initDeepLinkAuth(): Promise<void> {
   listenerInitialized = true;
 
   await App.addListener("appUrlOpen", async (event: URLOpenListenerEvent) => {
-    // Close any in-app browser tab that was opened for OAuth.
     try {
       await Browser.close();
     } catch {
       /* noop — browser may not be open */
     }
-    await handleAuthDeepLink(event.url);
+    await consumeAuthCallbackUrl(event.url);
   });
+
+  const { url } = await App.getLaunchUrl();
+  if (url) {
+    await consumeAuthCallbackUrl(url);
+  }
 }
