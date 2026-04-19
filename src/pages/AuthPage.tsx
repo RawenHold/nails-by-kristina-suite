@@ -51,7 +51,7 @@ export default function AuthPage() {
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Электронная почта</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full h-12 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary/20 transition placeholder:text-muted-foreground/50"
-              placeholder="kristina@example.com" required autoComplete="email" />
+              placeholder="you@example.com" required autoComplete="email" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Пароль</label>
