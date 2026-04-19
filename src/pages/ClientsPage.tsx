@@ -53,7 +53,7 @@ export default function ClientsPage() {
   return (
     <div className="min-h-screen">
       <PageHeader title="Клиенты" subtitle={`${clients?.length || 0} клиенток`} />
-      <div className="px-4 space-y-3 pb-4">
+      <div className="px-4 space-y-3 pb-nav">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
