@@ -3,6 +3,7 @@ import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthRedirectUrl } from "@/lib/deepLinkAuth";
 
 /**
  * Sign in with Google.
@@ -17,9 +18,11 @@ import { supabase } from "@/integrations/supabase/client";
 export async function signInWithGoogle(): Promise<{ error?: Error }> {
   const isNative = Capacitor.isNativePlatform();
 
+  const redirectUri = getAuthRedirectUrl();
+
   if (!isNative) {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: redirectUri,
     });
     if (result.error) return { error: result.error as Error };
     return {};
@@ -53,7 +56,7 @@ export async function signInWithGoogle(): Promise<{ error?: Error }> {
 
     // Kick off the OAuth flow — open initiate URL in in-app browser.
     lovable.auth
-      .signInWithOAuth("google", { redirect_uri: window.location.origin })
+      .signInWithOAuth("google", { redirect_uri: redirectUri })
       .then(async (result) => {
         if (result.error) {
           if (listenerHandle) await (listenerHandle as any).remove();
