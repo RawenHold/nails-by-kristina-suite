@@ -27,7 +27,7 @@ export const PUBLISHED_AUTH_BRIDGE_URL = "https://k-nails-finance.lovable.app/au
 export function getAuthRedirectUrl(): string {
   return Capacitor.isNativePlatform()
     ? `${PUBLISHED_AUTH_BRIDGE_URL}?native=1`
-    : window.location.origin;
+    : `${window.location.origin}/auth/callback`;
 }
 
 /**
