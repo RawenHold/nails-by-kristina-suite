@@ -124,7 +124,7 @@ export default function ClientProfilePage() {
   return (
     <div className="min-h-screen">
       <PageHeader title={c.full_name} showBack />
-      <div className="px-4 space-y-4 pb-6">
+      <div className="px-4 space-y-4 pb-nav">
         <GlassCard elevated className="text-center pt-6 pb-4">
           <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <span className="text-xl font-bold text-primary">{c.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}</span>

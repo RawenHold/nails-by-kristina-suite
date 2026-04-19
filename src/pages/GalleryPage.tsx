@@ -61,7 +61,7 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen">
       <PageHeader title="Галерея" subtitle={`${filtered.length} фото`} />
-      <div className="px-4 space-y-3 pb-4">
+      <div className="px-4 space-y-3 pb-nav">
         <ChipGroup options={filters} selected={filter} onChange={setFilter} />
 
         {filter === "✨ Лучшие" && filtered.length > 0 && (

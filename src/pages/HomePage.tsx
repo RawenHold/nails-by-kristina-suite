@@ -5,7 +5,7 @@ import StatCard from "@/components/ui/StatCard";
 import ChipGroup from "@/components/ui/ChipGroup";
 import EmptyState from "@/components/ui/EmptyState";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, CalendarDays, Bell, Wallet, UserPlus, DollarSign, ArrowRight, AlertCircle, Repeat, Settings, Check, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, CalendarDays, Bell, Wallet, UserPlus, DollarSign, ArrowRight, Repeat, Check, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn, formatMoney } from "@/lib/utils";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -55,13 +55,12 @@ export default function HomePage() {
     { icon: CalendarDays, label: "Запись", color: "bg-blue-50 dark:bg-blue-900/20", action: () => navigate("/calendar") },
     { icon: DollarSign, label: "Доход", color: "bg-emerald-50 dark:bg-emerald-900/20", action: () => navigate("/finances") },
     { icon: TrendingDown, label: "Расход", color: "bg-amber-50 dark:bg-amber-900/20", action: () => navigate("/finances") },
-    { icon: Settings, label: "Ещё", color: "bg-purple-50 dark:bg-purple-900/20", action: () => navigate("/settings") },
   ];
 
   return (
     <div className="min-h-screen">
       <PageHeader title="Nails by Kristina" subtitle={`${greeting}, Кристина ✨`} />
-      <div className="px-4 space-y-4 pt-2">
+      <div className="px-4 space-y-4 pt-2 pb-nav">
         <ChipGroup options={periods} selected={period} onChange={setPeriod} />
 
         <div className="grid grid-cols-2 gap-2.5">
