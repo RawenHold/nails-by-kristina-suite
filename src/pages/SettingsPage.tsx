@@ -7,7 +7,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { useServices, useCreateService, useUpdateService, useDeleteService, type Service } from "@/hooks/useServices";
 import { useExpenseCategories, useCreateExpenseCategory, useUpdateExpenseCategory, useDeleteExpenseCategory } from "@/hooks/useExpenses";
 import { useMessageTemplates, useCreateMessageTemplate, useUpdateMessageTemplate, useDeleteMessageTemplate, type MessageTemplate } from "@/hooks/useMessageTemplates";
-import { Sun, Moon, Monitor, LogOut, Plus, Sparkles, Wrench, Tag, MessageSquare, X, Pencil, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, MessageSquare, X, Pencil, Trash2 } from "lucide-react";
+import MasterProfileCard from "@/components/settings/MasterProfileCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
@@ -94,16 +95,8 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Настройки" showBack />
       <div className="px-4 space-y-4 pb-nav">
-        {/* Profile */}
-        <GlassCard elevated className="flex items-center gap-3 py-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">K Nails Finance</p>
-            <p className="text-[11px] text-muted-foreground">{user?.email}</p>
-          </div>
-        </GlassCard>
+        {/* Master profile */}
+        <MasterProfileCard />
 
         {/* Theme */}
         <GlassCard>
