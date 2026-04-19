@@ -32,21 +32,6 @@ function LoadingScreen() {
   );
 }
 
-function ProtectedAppRoutes() {
-  return (
-    <Route element={<AppLayout />}>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/calendar" element={<CalendarPage />} />
-      <Route path="/clients" element={<ClientsPage />} />
-      <Route path="/clients/:id" element={<ClientProfilePage />} />
-      <Route path="/gallery" element={<GalleryPage />} />
-      <Route path="/timer" element={<TimerPage />} />
-      <Route path="/finances" element={<FinancesPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-    </Route>
-  );
-}
-
 function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
@@ -54,8 +39,23 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
-      {user ? <ProtectedAppRoutes /> : <Route path="*" element={<AuthPage />} />}
-      {user && <Route path="*" element={<NotFound />} />}
+      {user ? (
+        <>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/clients/:id" element={<ClientProfilePage />} />
+            <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/finances" element={<FinancesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </>
+      ) : (
+        <Route path="*" element={<AuthPage />} />
+      )}
     </Routes>
   );
 }
