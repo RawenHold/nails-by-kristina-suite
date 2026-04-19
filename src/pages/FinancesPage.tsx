@@ -200,19 +200,17 @@ export default function FinancesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {!txn.linked && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (txn.type === "income") openEditIncome(txn.raw as Income);
-                          else openEditExpense(txn.raw as Expense);
-                        }}
-                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
-                        aria-label="Редактировать"
-                      >
-                        <Edit className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (txn.type === "income") openEditIncome(txn.raw as Income);
+                        else openEditExpense(txn.raw as Expense);
+                      }}
+                      className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                      aria-label="Редактировать"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: txn.id, type: txn.type }); }}
                       className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
