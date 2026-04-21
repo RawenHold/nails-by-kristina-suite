@@ -5,7 +5,7 @@ import FloatingActionButton from "@/components/ui/FloatingActionButton";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
-import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit, FileText, Phone, MessageCircle } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit, FileText, Phone } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "framer-motion";
