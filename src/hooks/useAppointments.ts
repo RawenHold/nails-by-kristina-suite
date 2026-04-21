@@ -211,10 +211,13 @@ export function useCompleteAppointment() {
 
       const serviceNames = apt.appointment_services?.map((s: { services?: { name?: string } }) => s.services?.name).filter(Boolean) as string[];
 
-      // Update appointment as completed
+      // Update appointment as completed (and persist payment note into appointment notes so it stays visible)
+      const mergedNotes = input.note
+        ? (apt.notes ? `${apt.notes}\n💰 ${input.note}` : `💰 ${input.note}`)
+        : apt.notes;
       const { error: updErr } = await supabase
         .from("appointments")
-        .update({ status: "completed", final_price: input.paid_amount })
+        .update({ status: "completed", final_price: input.paid_amount, notes: mergedNotes })
         .eq("id", input.appointment_id);
       if (updErr) throw updErr;
 
