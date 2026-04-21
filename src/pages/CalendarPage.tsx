@@ -15,6 +15,7 @@ import { useAppointments, useCreateAppointment, useUpdateAppointmentStatus, useU
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
 import DatePickerSheet from "@/components/ui/DatePickerSheet";
+import SwipeableDateStrip from "@/components/ui/SwipeableDateStrip";
 
 const statusColors: Record<string, string> = {
   planned: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
