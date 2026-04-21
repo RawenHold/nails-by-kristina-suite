@@ -14,6 +14,7 @@ import { cn, formatMoney, parseMoney } from "@/lib/utils";
 import { useAppointments, useCreateAppointment, useUpdateAppointmentStatus, useUpdateAppointment, useCompleteAppointment, useDeleteAppointment, type Appointment } from "@/hooks/useAppointments";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
+import DatePickerSheet from "@/components/ui/DatePickerSheet";
 
 const statusColors: Record<string, string> = {
   planned: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
@@ -154,6 +155,9 @@ export default function CalendarPage() {
     <div className="min-h-screen">
       <PageHeader title="Календарь" subtitle={format(currentDate, "EEEE, d MMMM", { locale: ru })} />
       <div className="px-4 space-y-3 pt-2 pb-nav">
+        <div className="flex justify-center">
+          <DatePickerSheet value={currentDate} onChange={setCurrentDate} />
+        </div>
         <div className="flex items-center gap-1.5">
           <button onClick={() => setCurrentDate(d => addDays(d, -7))} className="w-9 h-9 rounded-2xl glass-button flex items-center justify-center shrink-0 active:scale-90">
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
