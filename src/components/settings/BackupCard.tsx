@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Upload, Database, AlertTriangle } from "lucide-react";
+import { Download, Upload, Database } from "lucide-react";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/GlassCard";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
