@@ -5,7 +5,7 @@ import FloatingActionButton from "@/components/ui/FloatingActionButton";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
-import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit, FileText, Phone, MessageCircle } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -44,6 +44,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
+  const [viewing, setViewing] = useState<Appointment | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as PaymentMethod, note: "" });
