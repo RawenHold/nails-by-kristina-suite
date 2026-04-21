@@ -31,6 +31,7 @@ type PaymentMethod = "cash" | "card" | "transfer" | "other";
 
 const emptyForm = {
   client_id: "",
+  date: new Date(),
   start_hour: "10",
   start_min: "00",
   end_hour: "11",
