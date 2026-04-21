@@ -19,7 +19,7 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
       aria-hidden="true"
     >
       <svg
-        viewBox="0 0 400 110"
+        viewBox="0 0 400 90"
         preserveAspectRatio="xMidYMid slice"
         className="w-full h-full"
       >
