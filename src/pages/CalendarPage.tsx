@@ -87,9 +87,9 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
-    const startTime = new Date(currentDate);
+    const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
-    const endTime = new Date(currentDate);
+    const endTime = new Date(form.date);
     endTime.setHours(parseInt(form.end_hour), parseInt(form.end_min), 0, 0);
     if (endTime <= startTime) { toast.error("Время окончания должно быть позже начала"); return; }
 
