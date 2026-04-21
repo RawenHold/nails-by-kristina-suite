@@ -134,43 +134,59 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
               )}
             </div>
 
-            <nav className="flex-1 overflow-y-auto px-3 py-3">
-              <div className="space-y-1">
-                {navItems.map((it) => (
+            <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+              {[
+                { label: "Работа", items: workSection },
+                { label: "Контент", items: contentSection },
+                { label: "Финансы", items: financeSection },
+              ].map((section) => (
+                <div key={section.label}>
+                  <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    {section.label}
+                  </div>
+                  <div className="space-y-1">
+                    {section.items.map((it) => (
+                      <button
+                        key={it.path}
+                        onClick={() => go(it.path)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
+                      >
+                        <div className="liquid-glass liquid-glass-active w-9 h-9 rounded-xl flex items-center justify-center">
+                          <it.icon className="w-4 h-4 text-primary-foreground relative z-10" />
+                        </div>
+                        <span className="text-sm font-medium text-foreground">{it.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div>
+                <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                  Аккаунт
+                </div>
+                <div className="space-y-1">
                   <button
-                    key={it.path}
-                    onClick={() => go(it.path)}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:bg-secondary/70 transition-colors text-left"
+                    onClick={() => go("/settings")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <it.icon className="w-4 h-4 text-primary" />
+                    <div className="liquid-glass w-9 h-9 rounded-xl flex items-center justify-center">
+                      <Settings className="w-4 h-4 text-foreground/80 relative z-10" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{it.label}</span>
+                    <span className="text-sm font-medium text-foreground">Настройки</span>
                   </button>
-                ))}
+
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-destructive/10 transition-colors text-left"
+                  >
+                    <div className="liquid-glass w-9 h-9 rounded-xl flex items-center justify-center" style={{ boxShadow: "inset 0 1px 0 hsl(var(--glass-highlight)), inset 0 -6px 12px hsl(var(--destructive) / 0.18), 0 4px 14px hsl(var(--destructive) / 0.12)" }}>
+                      <LogOut className="w-4 h-4 text-destructive relative z-10" />
+                    </div>
+                    <span className="text-sm font-medium text-destructive">Выйти</span>
+                  </button>
+                </div>
               </div>
-
-              <div className="h-px bg-glass-border my-3" />
-
-              <button
-                onClick={() => go("/settings")}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:bg-secondary/70 transition-colors text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-foreground/70" />
-                </div>
-                <span className="text-sm font-medium text-foreground">Настройки</span>
-              </button>
-
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:bg-destructive/10 transition-colors text-left"
-              >
-                <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center">
-                  <LogOut className="w-4 h-4 text-destructive" />
-                </div>
-                <span className="text-sm font-medium text-destructive">Выйти</span>
-              </button>
             </nav>
 
             <div className="px-5 pb-[max(env(safe-area-inset-bottom,0px),1rem)] pt-2 text-[10px] text-muted-foreground/70 text-center">
