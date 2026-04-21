@@ -283,3 +283,24 @@ body.is-native .shimmer {
     scroll-behavior: auto !important;
   }
 }
+
+/* DatePicker day markers (appointment dots) */
+.has-apt-active::after,
+.has-apt-completed::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+}
+.has-apt-active::after { background-color: hsl(var(--primary)); }
+.has-apt-completed::after { background-color: rgb(16 185 129); }
+.has-apt-active.day_selected::after,
+.has-apt-completed.day_selected::after,
+[aria-selected="true"].has-apt-active::after,
+[aria-selected="true"].has-apt-completed::after {
+  background-color: hsl(var(--primary-foreground));
+}
