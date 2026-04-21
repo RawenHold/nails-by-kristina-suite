@@ -229,8 +229,8 @@ export default function ClientProfilePage() {
               <div className="space-y-2">
                 {c.phone && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{c.phone}</span>
-                    <button onClick={() => { navigator.clipboard.writeText(c.phone!); toast.success("Скопировано"); }}><Copy className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                    <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="text-xs text-primary font-medium active:opacity-70">{c.phone}</a>
+                    <button onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(c.phone!); toast.success("Скопировано"); }}><Copy className="w-3.5 h-3.5 text-muted-foreground" /></button>
                   </div>
                 )}
                 {c.telegram_username && (
