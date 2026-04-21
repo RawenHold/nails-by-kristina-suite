@@ -67,12 +67,22 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
             <stop offset="0%" stopColor="hsl(230 25% 75%)" />
             <stop offset="100%" stopColor="hsl(245 30% 55%)" />
           </linearGradient>
+
+          {/* Tree silhouettes */}
+          <linearGradient id="tree-day" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(150 35% 35%)" />
+            <stop offset="100%" stopColor="hsl(150 40% 22%)" />
+          </linearGradient>
+          <linearGradient id="tree-night" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(230 30% 18%)" />
+            <stop offset="100%" stopColor="hsl(240 35% 10%)" />
+          </linearGradient>
         </defs>
 
         {/* Background sky */}
         <rect
           width="400"
-          height="110"
+          height="90"
           fill={isNight ? "url(#sky-night)" : "url(#sky-day)"}
         />
 
