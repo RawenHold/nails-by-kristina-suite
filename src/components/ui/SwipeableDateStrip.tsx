@@ -55,7 +55,7 @@ export default function SwipeableDateStrip({ value, onChange, range = 90 }: Swip
           const key = format(day, "yyyy-MM-dd");
           const isSelected = isSameDay(day, value);
           const isToday = isSameDay(day, today);
-          const info = monthMap?.get(key);
+          const info = monthMap?.[key];
 
           return (
             <button

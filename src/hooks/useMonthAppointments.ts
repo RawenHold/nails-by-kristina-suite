@@ -23,18 +23,19 @@ export function useMonthAppointments(monthAnchor: Date) {
         .lte("start_time", to);
       if (error) throw error;
 
-      // Map: "YYYY-MM-DD" -> { count, hasCompleted, hasActive }
-      const map = new Map<string, { count: number; hasCompleted: boolean; hasActive: boolean }>();
+      // Plain object record (serializable for React Query persistence).
+      // Key: "YYYY-MM-DD" -> { count, hasCompleted, hasActive }
+      const record: Record<string, { count: number; hasCompleted: boolean; hasActive: boolean }> = {};
       for (const row of data ?? []) {
         const d = new Date(row.start_time);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        const cur = map.get(key) ?? { count: 0, hasCompleted: false, hasActive: false };
+        const cur = record[key] ?? { count: 0, hasCompleted: false, hasActive: false };
         cur.count += 1;
         if (row.status === "completed") cur.hasCompleted = true;
         else if (row.status !== "canceled" && row.status !== "no_show") cur.hasActive = true;
-        map.set(key, cur);
+        record[key] = cur;
       }
-      return map;
+      return record;
     },
     enabled: !!user,
   });
