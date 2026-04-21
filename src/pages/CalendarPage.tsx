@@ -482,7 +482,7 @@ export default function CalendarPage() {
         )}
       </BottomSheet>
 
-      <FloatingActionButton onClick={() => { setEditing(null); setForm(emptyForm); setShowForm(true); }} />
+      <FloatingActionButton onClick={() => { setEditing(null); setForm({ ...emptyForm, date: currentDate }); setShowForm(true); }} />
     </div>
   );
 }
