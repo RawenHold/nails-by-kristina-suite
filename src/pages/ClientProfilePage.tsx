@@ -139,7 +139,7 @@ export default function ClientProfilePage() {
           </div>
           <div className="flex justify-center gap-2.5 mt-4 flex-wrap">
             {[
-              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { navigator.clipboard.writeText(c.phone); toast.success("Телефон скопирован"); } else toast.error("Телефон не указан"); } },
+              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { window.location.href = `tel:${c.phone.replace(/\s/g, "")}`; } else toast.error("Телефон не указан"); } },
               { icon: MessageCircle, label: "Telegram", action: () => { if (c.telegram_username) window.open(`https://t.me/${c.telegram_username.replace("@", "")}`, "_blank"); else toast.error("Telegram не указан"); } },
               { icon: CalendarDays, label: "Запись", action: () => navigate("/calendar") },
               { icon: Bell, label: "Напомнить", action: () => setShowReminder(true) },
@@ -229,8 +229,8 @@ export default function ClientProfilePage() {
               <div className="space-y-2">
                 {c.phone && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{c.phone}</span>
-                    <button onClick={() => { navigator.clipboard.writeText(c.phone!); toast.success("Скопировано"); }}><Copy className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                    <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="text-xs text-primary font-medium active:opacity-70">{c.phone}</a>
+                    <button onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(c.phone!); toast.success("Скопировано"); }}><Copy className="w-3.5 h-3.5 text-muted-foreground" /></button>
                   </div>
                 )}
                 {c.telegram_username && (

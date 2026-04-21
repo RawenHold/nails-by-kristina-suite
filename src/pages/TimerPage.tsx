@@ -3,7 +3,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { Timer, Play, Pause, Square, RotateCcw, Clock, Trash2, CheckSquare, Square as SquareIcon } from "lucide-react";
+import StopwatchDial from "@/components/timer/StopwatchDial";
+import { Timer, Clock, Trash2, CheckSquare, Square as SquareIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/useClients";
@@ -102,52 +103,71 @@ export default function TimerPage() {
     <div className="min-h-screen">
       <PageHeader title="Таймер" subtitle="Отслеживание времени" />
       <div className="px-4 space-y-4 pb-nav">
-        {/* Timer Display */}
-        <GlassCard elevated className="text-center py-8">
-          <div className={cn(
-            "w-48 h-48 rounded-full glass-card-elevated flex items-center justify-center mx-auto mb-6",
-            state === "running" && "ring-2 ring-primary/30"
-          )}>
-            <span className="text-4xl font-mono font-bold text-foreground tracking-wider">{formatTime(elapsed)}</span>
+        {/* iOS-style stopwatch */}
+        <div className="rounded-3xl bg-gradient-to-b from-secondary/40 to-secondary/10 p-5 pt-7 pb-6">
+          <div className="relative w-[78vw] max-w-[340px] aspect-square mx-auto">
+            <StopwatchDial elapsed={elapsed} running={state === "running"} />
+            {/* Centered digital readout */}
+            <div className="absolute inset-x-0 top-[58%] flex justify-center pointer-events-none">
+              <span className="font-mono text-[clamp(1.1rem,4.6vw,1.5rem)] font-medium text-foreground tracking-wider tabular-nums">
+                {formatTime(elapsed)}
+              </span>
+            </div>
           </div>
 
-          <div className="flex justify-center gap-4">
-            {state === "idle" && (
-              <motion.button whileTap={{ scale: 0.95 }} onClick={handleStart}
-                className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/30">
-                <Play className="w-6 h-6 ml-0.5" />
+          {/* iOS dual circular buttons */}
+          <div className="flex items-center justify-between mt-7 px-2">
+            {/* Left: Reset (idle when running, otherwise reset/disabled) */}
+            {state === "running" ? (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handlePause}
+                className="w-[68px] h-[68px] rounded-full bg-secondary/70 text-foreground text-sm font-medium ring-1 ring-glass-border active:bg-secondary"
+              >
+                Пауза
+              </motion.button>
+            ) : state === "paused" ? (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleReset}
+                className="w-[68px] h-[68px] rounded-full bg-secondary/70 text-foreground text-sm font-medium ring-1 ring-glass-border active:bg-secondary"
+              >
+                Сброс
+              </motion.button>
+            ) : (
+              <div className="w-[68px] h-[68px] rounded-full bg-secondary/30 text-muted-foreground/50 text-sm font-medium flex items-center justify-center select-none">
+                Сброс
+              </div>
+            )}
+
+            {/* Right: Start / Stop */}
+            {state === "running" ? (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleStop}
+                className="w-[68px] h-[68px] rounded-full text-destructive text-sm font-semibold ring-1 ring-destructive/30 bg-destructive/15 active:bg-destructive/25"
+              >
+                Стоп
+              </motion.button>
+            ) : state === "paused" ? (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleResume}
+                className="w-[68px] h-[68px] rounded-full text-success text-sm font-semibold ring-1 ring-success/30 bg-success/15 active:bg-success/25"
+              >
+                Старт
+              </motion.button>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleStart}
+                className="w-[68px] h-[68px] rounded-full text-success text-base font-semibold ring-1 ring-success/30 bg-success/15 active:bg-success/25"
+              >
+                Старт
               </motion.button>
             )}
-            {state === "running" && (
-              <>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handlePause}
-                  className="w-14 h-14 rounded-full bg-warning text-warning-foreground flex items-center justify-center shadow-lg">
-                  <Pause className="w-6 h-6" />
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleStop}
-                  className="w-14 h-14 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg">
-                  <Square className="w-5 h-5" />
-                </motion.button>
-              </>
-            )}
-            {state === "paused" && (
-              <>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleResume}
-                  className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/30">
-                  <Play className="w-6 h-6 ml-0.5" />
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleStop}
-                  className="w-14 h-14 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg">
-                  <Square className="w-5 h-5" />
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleReset}
-                  className="w-14 h-14 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                  <RotateCcw className="w-5 h-5" />
-                </motion.button>
-              </>
-            )}
           </div>
-        </GlassCard>
+        </div>
 
         {/* Link to client */}
         <GlassCard>
