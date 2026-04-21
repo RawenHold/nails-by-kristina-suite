@@ -1,4 +1,6 @@
 import JSZip from "jszip";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 import { supabase } from "@/integrations/supabase/client";
 import { flushQueue, getPendingCount } from "@/lib/offline/queue";
 
@@ -131,7 +133,50 @@ export async function createBackup(onProgress: ProgressFn = () => {}): Promise<B
   return blob;
 }
 
-export function downloadBlob(blob: Blob, filename: string) {
+/**
+ * Saves a backup blob.
+ * - Native (iOS/Android): writes the file into the device's user-visible
+ *   storage via Capacitor Filesystem.
+ *     • Android → public "Download/" folder (system Downloads app)
+ *     • iOS     → app Documents folder (Files → On My iPhone → K Nails Finance)
+ * - Web: triggers a regular browser download.
+ *
+ * Returns a short label describing where the file landed (used for the toast).
+ */
+export async function downloadBlob(blob: Blob, filename: string): Promise<string> {
+  if (Capacitor.isNativePlatform()) {
+    const base64 = await blobToBase64(blob);
+    const platform = Capacitor.getPlatform();
+
+    if (platform === "android") {
+      try {
+        await Filesystem.writeFile({
+          path: `Download/${filename}`,
+          data: base64,
+          directory: Directory.ExternalStorage,
+          recursive: true,
+        });
+        return "Папка «Загрузки»";
+      } catch {
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        return "Папка «Документы»";
+      }
+    }
+
+    await Filesystem.writeFile({
+      path: filename,
+      data: base64,
+      directory: Directory.Documents,
+      recursive: true,
+    });
+    return "Файлы → K Nails Finance";
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -140,6 +185,20 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return "Загрузки браузера";
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 /* --------------------------------- RESTORE --------------------------------- */
