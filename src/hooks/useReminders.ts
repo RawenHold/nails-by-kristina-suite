@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { format, parseISO } from "date-fns";
+import { enqueueMutation } from "@/lib/offline/queue";
+
+const isOffline = () => typeof navigator !== "undefined" && !navigator.onLine;
 
 export type Reminder = Tables<"reminders"> & {
   clients?: { full_name: string; phone: string | null } | null;
@@ -47,6 +50,18 @@ export function useCreateReminder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: Omit<TablesInsert<"reminders">, "owner_id">) => {
+      if (isOffline()) {
+        const row: any = {
+          id: crypto.randomUUID(),
+          ...input,
+          owner_id: user!.id,
+          status: input.status ?? "upcoming",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        await enqueueMutation({ table: "reminders", op: "insert", payload: row });
+        return row;
+      }
       const { data, error } = await supabase.from("reminders").insert({ ...input, owner_id: user!.id }).select().single();
       if (error) throw error;
       return data;
@@ -54,7 +69,7 @@ export function useCreateReminder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reminders"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Напоминание создано");
+      toast.success(isOffline() ? "Напоминание сохранено офлайн" : "Напоминание создано");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -64,13 +79,17 @@ export function useUpdateReminderStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "reminders", op: "update", payload: { status }, match: { id } });
+        return;
+      }
       const { error } = await supabase.from("reminders").update({ status: status as Tables<"reminders">["status"] }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reminders"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Статус обновлён");
+      toast.success(isOffline() ? "Сохранено офлайн" : "Статус обновлён");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -80,13 +99,17 @@ export function useDeleteReminder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "reminders", op: "delete", match: { id } });
+        return;
+      }
       const { error } = await supabase.from("reminders").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reminders"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Напоминание удалено");
+      toast.success(isOffline() ? "Удалено офлайн" : "Напоминание удалено");
     },
     onError: (e: Error) => toast.error(e.message),
   });
