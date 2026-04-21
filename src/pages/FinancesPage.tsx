@@ -6,13 +6,14 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import MonthYearPicker from "@/components/ui/MonthYearPicker";
-import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit, FileText } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit, FileText, TrendingUp, TrendingDown, PiggyBank } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney, parseMoney } from "@/lib/utils";
 import { useIncomes, useCreateIncome, useUpdateIncome, useDeleteIncome, type Income } from "@/hooks/useIncomes";
 import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense, useExpenseCategories, type Expense } from "@/hooks/useExpenses";
 import { useClients } from "@/hooks/useClients";
+import { useAllTimeStats } from "@/hooks/useAllTimeStats";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
