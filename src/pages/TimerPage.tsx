@@ -104,11 +104,12 @@ export default function TimerPage() {
       <div className="px-4 space-y-4 pb-nav">
         {/* Timer Display */}
         <GlassCard elevated className="text-center py-8">
-          <motion.div animate={{ scale: state === "running" ? [1, 1.02, 1] : 1 }} transition={{ repeat: state === "running" ? Infinity : 0, duration: 2 }}>
-            <div className="w-48 h-48 rounded-full glass-card-elevated flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl font-mono font-bold text-foreground tracking-wider">{formatTime(elapsed)}</span>
-            </div>
-          </motion.div>
+          <div className={cn(
+            "w-48 h-48 rounded-full glass-card-elevated flex items-center justify-center mx-auto mb-6",
+            state === "running" && "ring-2 ring-primary/30"
+          )}>
+            <span className="text-4xl font-mono font-bold text-foreground tracking-wider">{formatTime(elapsed)}</span>
+          </div>
 
           <div className="flex justify-center gap-4">
             {state === "idle" && (
