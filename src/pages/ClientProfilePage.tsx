@@ -139,7 +139,7 @@ export default function ClientProfilePage() {
           </div>
           <div className="flex justify-center gap-2.5 mt-4 flex-wrap">
             {[
-              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { navigator.clipboard.writeText(c.phone); toast.success("Телефон скопирован"); } else toast.error("Телефон не указан"); } },
+              { icon: Phone, label: "Звонок", action: () => { if (c.phone) { window.location.href = `tel:${c.phone.replace(/\s/g, "")}`; } else toast.error("Телефон не указан"); } },
               { icon: MessageCircle, label: "Telegram", action: () => { if (c.telegram_username) window.open(`https://t.me/${c.telegram_username.replace("@", "")}`, "_blank"); else toast.error("Telegram не указан"); } },
               { icon: CalendarDays, label: "Запись", action: () => navigate("/calendar") },
               { icon: Bell, label: "Напомнить", action: () => setShowReminder(true) },
