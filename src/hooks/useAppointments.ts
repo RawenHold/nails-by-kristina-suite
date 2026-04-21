@@ -39,16 +39,13 @@ export function useCreateAppointment() {
       // Offline path: pre-generate UUID, optimistically push to cache, queue server writes.
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         const newId = crypto.randomUUID();
-        const aptRow = { id: newId, ...rest, owner_id: user!.id, status: "planned" as const, final_price: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const aptRow: any = { id: newId, ...rest, owner_id: user!.id, status: "planned", final_price: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         await enqueueMutation({ table: "appointments", op: "insert", payload: aptRow });
         if (service_ids.length > 0) {
-          await enqueueMutation({
-            table: "appointment_services",
-            op: "insert",
-            payload: service_ids.map(s => ({ id: crypto.randomUUID(), appointment_id: newId, service_id: s.id, price: s.price })),
-          });
+          const svcRows: any = service_ids.map(s => ({ id: crypto.randomUUID(), appointment_id: newId, service_id: s.id, price: s.price }));
+          await enqueueMutation({ table: "appointment_services", op: "insert", payload: svcRows });
         }
-        return aptRow as any;
+        return aptRow;
       }
 
       const { data: apt, error } = await supabase.from("appointments").insert({ ...rest, owner_id: user!.id }).select().single();
