@@ -31,6 +31,7 @@ type PaymentMethod = "cash" | "card" | "transfer" | "other";
 
 const emptyForm = {
   client_id: "",
+  date: new Date(),
   start_hour: "10",
   start_min: "00",
   end_hour: "11",
@@ -72,6 +73,7 @@ export default function CalendarPage() {
     setEditing(apt);
     setForm({
       client_id: apt.client_id || "",
+      date: start,
       start_hour: start.getHours().toString().padStart(2, "0"),
       start_min: start.getMinutes().toString().padStart(2, "0"),
       end_hour: end.getHours().toString().padStart(2, "0"),
@@ -85,9 +87,9 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
-    const startTime = new Date(currentDate);
+    const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
-    const endTime = new Date(currentDate);
+    const endTime = new Date(form.date);
     endTime.setHours(parseInt(form.end_hour), parseInt(form.end_min), 0, 0);
     if (endTime <= startTime) { toast.error("Время окончания должно быть позже начала"); return; }
 
@@ -248,6 +250,16 @@ export default function CalendarPage() {
               <option value="">Выберите клиентку</option>
               {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Дата визита</label>
+            <div className="flex items-center justify-between gap-2 input-glass h-12 px-3">
+              <span className="text-sm font-medium text-foreground">
+                {format(form.date, "d MMMM yyyy", { locale: ru })}
+              </span>
+              <DatePickerSheet value={form.date} onChange={(d) => setForm({ ...form, date: d })} />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Можно выбрать прошедшую дату — для записи старых визитов</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -480,7 +492,7 @@ export default function CalendarPage() {
         )}
       </BottomSheet>
 
-      <FloatingActionButton onClick={() => { setEditing(null); setForm(emptyForm); setShowForm(true); }} />
+      <FloatingActionButton onClick={() => { setEditing(null); setForm({ ...emptyForm, date: currentDate }); setShowForm(true); }} />
     </div>
   );
 }
