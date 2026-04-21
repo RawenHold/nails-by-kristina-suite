@@ -42,6 +42,7 @@ export default function FinancesPage() {
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
   const { data: categories } = useExpenseCategories();
   const { data: clients } = useClients();
+  const { data: allTimeStats } = useAllTimeStats();
   const createIncome = useCreateIncome();
   const updateIncomeMut = useUpdateIncome();
   const createExpense = useCreateExpense();
