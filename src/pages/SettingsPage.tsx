@@ -9,6 +9,7 @@ import { useExpenseCategories, useCreateExpenseCategory, useUpdateExpenseCategor
 import { useMessageTemplates, useCreateMessageTemplate, useUpdateMessageTemplate, useDeleteMessageTemplate, type MessageTemplate } from "@/hooks/useMessageTemplates";
 import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, MessageSquare, X, Pencil, Trash2 } from "lucide-react";
 import MasterProfileCard from "@/components/settings/MasterProfileCard";
+import BackupCard from "@/components/settings/BackupCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
@@ -184,6 +185,9 @@ export default function SettingsPage() {
             </div>
           )}
         </GlassCard>
+
+        {/* Backup & restore */}
+        <BackupCard />
 
         {/* Sign out */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={handleSignOut}
