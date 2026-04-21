@@ -1,16 +1,29 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Decorative animated SVG scene shown in the app header.
- * - Morning / Day (06:00–17:59): warm sun, soft clouds, sparkles
- * - Evening / Night (18:00–05:59): full moon with stars and drifting clouds
- *
- * Pure SVG + CSS animations — no JS frame loop, GPU-cheap on mobile.
+ * Reads the global `data-tod` attribute set by `useTimeOfDay`, so the scene
+ * stays in sync with the rest of the app's themed background.
  */
 export default function HeaderScene({ className = "" }: { className?: string }) {
-  const isNight = useMemo(() => {
+  const [isNight, setIsNight] = useState(() => {
+    const tod = typeof document !== "undefined"
+      ? document.documentElement.getAttribute("data-tod")
+      : null;
+    if (tod) return tod === "evening" || tod === "night";
     const h = new Date().getHours();
     return h >= 18 || h < 6;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const tod = document.documentElement.getAttribute("data-tod");
+      setIsNight(tod === "evening" || tod === "night");
+    };
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-tod"] });
+    return () => obs.disconnect();
   }, []);
 
   return (
