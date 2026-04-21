@@ -195,7 +195,7 @@ export default function CalendarPage() {
           <div className="space-y-2">
             {appointments.map((apt, i) => (
               <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <GlassCard className="py-3">
+                <GlassCard className="py-3 cursor-pointer" onClick={() => setViewing(apt)}>
                   <div className="flex items-start gap-3">
                     <div className="flex flex-col items-center gap-1 pt-0.5 min-w-[44px]">
                       <span className="text-sm font-bold text-foreground">{format(new Date(apt.start_time), "HH:mm")}</span>
@@ -217,7 +217,10 @@ export default function CalendarPage() {
                           ? `${formatMoney(apt.final_price)} сум · оплачено`
                           : `${formatMoney(apt.expected_price)} сум`}
                       </p>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      {apt.notes && (
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 whitespace-pre-line">{apt.notes}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                         {apt.status !== "completed" && apt.status !== "canceled" && (
                           <>
                             {apt.status === "planned" && (
