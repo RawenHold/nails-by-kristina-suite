@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { startOfDay, endOfDay } from "date-fns";
+import { enqueueMutation } from "@/lib/offline/queue";
 
 export type Appointment = Tables<"appointments"> & {
   clients?: { full_name: string; phone: string | null } | null;
@@ -34,6 +35,19 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: async (input: { client_id: string | null; start_time: string; end_time: string; expected_price: number; notes?: string; service_ids: { id: string; price: number }[] }) => {
       const { service_ids, ...rest } = input;
+
+      // Offline path: pre-generate UUID, optimistically push to cache, queue server writes.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const newId = crypto.randomUUID();
+        const aptRow: any = { id: newId, ...rest, owner_id: user!.id, status: "planned", final_price: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        await enqueueMutation({ table: "appointments", op: "insert", payload: aptRow });
+        if (service_ids.length > 0) {
+          const svcRows: any = service_ids.map(s => ({ id: crypto.randomUUID(), appointment_id: newId, service_id: s.id, price: s.price }));
+          await enqueueMutation({ table: "appointment_services", op: "insert", payload: svcRows });
+        }
+        return aptRow;
+      }
+
       const { data: apt, error } = await supabase.from("appointments").insert({ ...rest, owner_id: user!.id }).select().single();
       if (error) throw error;
 
@@ -48,7 +62,8 @@ export function useCreateAppointment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Запись создана");
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      toast.success(offline ? "Запись сохранена офлайн — отправится при сети" : "Запись создана");
     },
     onError: (e: Error) => toast.error(e.message || "Ошибка"),
   });

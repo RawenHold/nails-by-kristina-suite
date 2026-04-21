@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { flushQueue, getPendingCount } from "@/lib/offline/queue";
 
 /**
  * Tables exported as JSON. Order matters on RESTORE because of FK chains:
@@ -45,6 +46,16 @@ export async function createBackup(onProgress: ProgressFn = () => {}): Promise<B
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) throw new Error("Не авторизован");
+
+  // Flush any pending offline mutations first so the backup is up to date
+  const pending = await getPendingCount();
+  if (pending > 0) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      throw new Error(`Есть ${pending} несинхронизированных записей — подключитесь к интернету перед экспортом`);
+    }
+    onProgress("Синхронизация очереди…", 1);
+    await flushQueue();
+  }
 
   const zip = new JSZip();
   const dataFolder = zip.folder("data")!;
