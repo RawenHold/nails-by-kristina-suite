@@ -15,6 +15,7 @@ import { useAppointments, useCreateAppointment, useUpdateAppointmentStatus, useU
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
 import DatePickerSheet from "@/components/ui/DatePickerSheet";
+import SwipeableDateStrip from "@/components/ui/SwipeableDateStrip";
 
 const statusColors: Record<string, string> = {
   planned: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
@@ -158,29 +159,7 @@ export default function CalendarPage() {
         <div className="flex justify-center">
           <DatePickerSheet value={currentDate} onChange={setCurrentDate} />
         </div>
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => setCurrentDate(d => addDays(d, -7))} className="w-9 h-9 rounded-2xl glass-button flex items-center justify-center shrink-0 active:scale-90">
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <div className="flex-1 flex justify-between gap-1">
-            {weekDays.map((day) => {
-              const isSelected = isSameDay(day, currentDate);
-              const isToday = isSameDay(day, new Date());
-              return (
-                <button key={day.toISOString()} onClick={() => setCurrentDate(day)}
-                  className={cn("flex flex-col items-center gap-1 flex-1 py-2 rounded-2xl transition-all duration-200",
-                    isSelected && "bg-primary shadow-sm shadow-primary/20", !isSelected && isToday && "bg-primary/8")}>
-                  <span className={cn("text-[10px] font-medium", isSelected ? "text-primary-foreground" : "text-muted-foreground")}>{format(day, "EEE", { locale: ru })}</span>
-                  <span className={cn("text-sm font-bold", isSelected ? "text-primary-foreground" : "text-foreground")}>{format(day, "d")}</span>
-                  {isToday && !isSelected && <span className="w-1 h-1 rounded-full bg-primary" />}
-                </button>
-              );
-            })}
-          </div>
-          <button onClick={() => setCurrentDate(d => addDays(d, 7))} className="w-9 h-9 rounded-2xl glass-button flex items-center justify-center shrink-0 active:scale-90">
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
+        <SwipeableDateStrip value={currentDate} onChange={setCurrentDate} />
 
         {appointments && appointments.length > 0 && (
           <GlassCard elevated className="py-3">
