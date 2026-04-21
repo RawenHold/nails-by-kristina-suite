@@ -151,8 +151,8 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                         onClick={() => go(it.path)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
                       >
-                        <div className="liquid-glass liquid-glass-active w-9 h-9 rounded-2xl flex items-center justify-center">
-                          <it.icon className="w-4 h-4 text-primary relative z-10" />
+                        <div className="icon-glow icon-glow-active w-9 h-9 flex items-center justify-center">
+                          <it.icon className="w-[18px] h-[18px]" />
                         </div>
                         <span className="text-sm font-medium text-foreground">{it.label}</span>
                       </button>
@@ -170,8 +170,8 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                     onClick={() => go("/settings")}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
                   >
-                    <div className="liquid-glass w-9 h-9 rounded-xl flex items-center justify-center">
-                      <Settings className="w-4 h-4 text-foreground/80 relative z-10" />
+                    <div className="icon-glow w-9 h-9 flex items-center justify-center">
+                      <Settings className="w-[18px] h-[18px] text-foreground/80" />
                     </div>
                     <span className="text-sm font-medium text-foreground">Настройки</span>
                   </button>
@@ -180,8 +180,8 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-destructive/10 transition-colors text-left"
                   >
-                    <div className="liquid-glass w-9 h-9 rounded-xl flex items-center justify-center" style={{ boxShadow: "inset 0 1px 0 hsl(var(--glass-highlight)), inset 0 -6px 12px hsl(var(--destructive) / 0.18), 0 4px 14px hsl(var(--destructive) / 0.12)" }}>
-                      <LogOut className="w-4 h-4 text-destructive relative z-10" />
+                    <div className="icon-glow w-9 h-9 flex items-center justify-center">
+                      <LogOut className="w-[18px] h-[18px] text-destructive" style={{ filter: "drop-shadow(0 0 6px hsl(var(--destructive) / 0.5))" }} />
                     </div>
                     <span className="text-sm font-medium text-destructive">Выйти</span>
                   </button>
