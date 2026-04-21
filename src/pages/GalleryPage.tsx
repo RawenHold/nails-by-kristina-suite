@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { usePhotos, useToggleFavorite, useDeletePhoto, useUploadPhoto, useBulkDeletePhotos, type VisitPhoto } from "@/hooks/usePhotos";
 import { useVisits } from "@/hooks/useVisits";
 import { useClients } from "@/hooks/useClients";
+import { savePhotoToDevice } from "@/lib/savePhoto";
 
 type FilterMode = "all" | "favorites";
 
