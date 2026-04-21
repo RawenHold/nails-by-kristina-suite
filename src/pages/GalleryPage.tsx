@@ -290,7 +290,8 @@ export default function GalleryPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 inset-x-0 z-40 bg-background/90 backdrop-blur-xl border-t border-border/40 safe-bottom"
+            style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+            className="fixed inset-x-0 z-40 mx-3 mb-2 rounded-3xl bg-background/85 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
           >
             <div className="px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-sm text-muted-foreground">{selectedIds.size} выбрано</span>

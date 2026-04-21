@@ -50,16 +50,7 @@ export default function PageHeader({ title, subtitle, action, showBack, hideSett
               K Nails
             </span>
           </div>
-          {!hideSettings && !isSettings && (
-            <button
-              onClick={() => navigate("/settings")}
-              className="absolute top-2 right-2 w-9 h-9 rounded-2xl bg-background/40 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/20 z-10"
-              aria-label="Настройки"
-            >
-              <Settings className="w-4 h-4 text-white drop-shadow" />
-            </button>
-          )}
-          {action && <div className="absolute bottom-1 left-2 z-10">{action}</div>}
+          {action && <div className="absolute bottom-1 right-2 z-10">{action}</div>}
         </div>
         {subtitle && (
           <p className="text-xs font-medium text-muted-foreground mt-2 px-1">{subtitle}</p>
