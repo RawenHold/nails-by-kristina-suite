@@ -115,7 +115,7 @@ export default function BackupCard() {
 
       <ConfirmDialog
         open={!!pendingFile}
-        onClose={() => setPendingFile(null)}
+        onOpenChange={(v) => { if (!v) setPendingFile(null); }}
         onConfirm={handleConfirmRestore}
         title="Восстановить из бэкапа?"
         description={
@@ -123,7 +123,7 @@ export default function BackupCard() {
           `Существующие записи с такими же ID будут перезаписаны. Удалённые с момента создания бэкапа записи не пострадают.`
         }
         confirmLabel="Восстановить"
-        icon={AlertTriangle}
+        destructive={false}
       />
     </>
   );
