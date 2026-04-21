@@ -414,6 +414,80 @@ export default function ClientProfilePage() {
         description="Все визиты, фото, записи, доходы и напоминания этой клиентки будут безвозвратно удалены. Это действие нельзя отменить."
         confirmLabel="Удалить навсегда"
       />
+
+      {/* Visit details */}
+      <BottomSheet
+        open={!!visitDetails}
+        onClose={() => setVisitDetails(null)}
+        title="Детали визита"
+      >
+        {visitDetails && (
+          <div className="space-y-3 pb-2">
+            <GlassCard className="text-center py-4">
+              <p className="text-xs text-muted-foreground">Дата визита</p>
+              <p className="text-base font-semibold text-foreground mt-0.5">
+                {format(new Date(visitDetails.visit_date), "d MMMM yyyy, HH:mm", { locale: ru })}
+              </p>
+            </GlassCard>
+
+            <GlassCard className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Сумма</span>
+              <span className="text-base font-bold text-primary">{formatMoney(visitDetails.total_price)} сум</span>
+            </GlassCard>
+
+            {visitDetails.services_performed && visitDetails.services_performed.length > 0 && (
+              <GlassCard>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">Услуги</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {visitDetails.services_performed.map((s) => (
+                    <span key={s} className="text-[11px] bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">{s}</span>
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+
+            {(visitDetails.colors_used?.length || visitDetails.nail_shape || visitDetails.nail_length) && (
+              <GlassCard className="space-y-2">
+                {visitDetails.colors_used && visitDetails.colors_used.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">Цвета</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {visitDetails.colors_used.map((color) => (
+                        <span key={color} className="text-[11px] bg-primary/8 text-primary px-2.5 py-1 rounded-full">{color}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-6">
+                  {visitDetails.nail_shape && <div><p className="text-[10px] text-muted-foreground mb-0.5">Форма</p><p className="text-sm font-medium text-foreground">{visitDetails.nail_shape}</p></div>}
+                  {visitDetails.nail_length && <div><p className="text-[10px] text-muted-foreground mb-0.5">Длина</p><p className="text-sm font-medium text-foreground">{visitDetails.nail_length}</p></div>}
+                </div>
+              </GlassCard>
+            )}
+
+            {visitDetails.design_notes && (
+              <GlassCard>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1.5">Дизайн</p>
+                <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{visitDetails.design_notes}</p>
+              </GlassCard>
+            )}
+
+            {visitDetails.private_notes && (
+              <GlassCard>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1.5">Личные заметки</p>
+                <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{visitDetails.private_notes}</p>
+              </GlassCard>
+            )}
+
+            <GlassCard className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Оплата</span>
+              <span className="text-xs font-semibold text-foreground">
+                {visitDetails.payment_received ? "Получена" : "Не получена"} · {visitDetails.payment_method}
+              </span>
+            </GlassCard>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }
