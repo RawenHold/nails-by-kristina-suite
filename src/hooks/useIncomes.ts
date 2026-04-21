@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { startOfMonth, endOfMonth } from "date-fns";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { enqueueMutation } from "@/lib/offline/queue";
+
+const isOffline = () => typeof navigator !== "undefined" && !navigator.onLine;
 
 export type Income = Tables<"incomes"> & { clients?: { full_name: string } | null };
 
@@ -29,11 +32,22 @@ export function useCreateIncome() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: Omit<TablesInsert<"incomes">, "owner_id">) => {
+      if (isOffline()) {
+        const row: any = {
+          id: crypto.randomUUID(),
+          ...input,
+          owner_id: user!.id,
+          received_at: input.received_at ?? new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        };
+        await enqueueMutation({ table: "incomes", op: "insert", payload: row });
+        return row;
+      }
       const { data, error } = await supabase.from("incomes").insert({ ...input, owner_id: user!.id }).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Доход записан"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success(isOffline() ? "Доход сохранён офлайн" : "Доход записан"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -42,6 +56,10 @@ export function useUpdateIncome() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & TablesUpdate<"incomes">) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "incomes", op: "update", payload: updates, match: { id } });
+        return { id, ...updates } as any;
+      }
       const { data, error } = await supabase.from("incomes").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return data;
@@ -49,7 +67,7 @@ export function useUpdateIncome() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["incomes"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Доход обновлён");
+      toast.success(isOffline() ? "Сохранено офлайн" : "Доход обновлён");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -59,10 +77,14 @@ export function useDeleteIncome() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "incomes", op: "delete", match: { id } });
+        return;
+      }
       const { error } = await supabase.from("incomes").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Доход удалён"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["incomes"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success(isOffline() ? "Удалено офлайн" : "Доход удалён"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }

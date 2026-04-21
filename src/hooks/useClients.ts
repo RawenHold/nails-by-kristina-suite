@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { enqueueMutation } from "@/lib/offline/queue";
+
+const isOffline = () => typeof navigator !== "undefined" && !navigator.onLine;
 
 export type Client = Tables<"clients">;
 export type ClientInsert = TablesInsert<"clients">;
@@ -59,6 +62,38 @@ export function useCreateClient() {
 
   return useMutation({
     mutationFn: async (input: Omit<ClientInsert, "owner_id">) => {
+      if (isOffline()) {
+        const now = new Date().toISOString();
+        const row: any = {
+          id: crypto.randomUUID(),
+          full_name: input.full_name,
+          phone: input.phone ?? null,
+          telegram_link: (input as any).telegram_link ?? null,
+          telegram_username: (input as any).telegram_username ?? null,
+          notes: input.notes ?? null,
+          allergies: input.allergies ?? null,
+          avatar_url: input.avatar_url ?? null,
+          favorite_colors: (input as any).favorite_colors ?? null,
+          favorite_designs: (input as any).favorite_designs ?? null,
+          favorite_length: (input as any).favorite_length ?? null,
+          favorite_shape: (input as any).favorite_shape ?? null,
+          manual_reminder_date: (input as any).manual_reminder_date ?? null,
+          recommended_next_visit: (input as any).recommended_next_visit ?? null,
+          owner_id: user!.id,
+          loyalty_level: "bronze",
+          lifecycle_status: "new",
+          total_spent: 0,
+          total_visits: 0,
+          average_check: 0,
+          is_archived: false,
+          created_at: now,
+          updated_at: now,
+          last_visit_date: null,
+          days_since_last_visit: null,
+        };
+        await enqueueMutation({ table: "clients", op: "insert", payload: row });
+        return row;
+      }
       const { data, error } = await supabase.from("clients").insert({ ...input, owner_id: user!.id }).select().single();
       if (error) throw error;
       return data;
@@ -66,7 +101,7 @@ export function useCreateClient() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Клиентка добавлена");
+      toast.success(isOffline() ? "Клиентка сохранена офлайн" : "Клиентка добавлена");
     },
     onError: (e: Error) => toast.error(e.message || "Ошибка создания"),
   });
@@ -77,6 +112,10 @@ export function useUpdateClient() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: ClientUpdate & { id: string }) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "clients", op: "update", payload: updates, match: { id } });
+        return { id, ...updates } as any;
+      }
       const { data, error } = await supabase.from("clients").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return data;
@@ -84,7 +123,7 @@ export function useUpdateClient() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["client", data.id] });
-      toast.success("Данные обновлены");
+      toast.success(isOffline() ? "Изменения сохранены офлайн" : "Данные обновлены");
     },
     onError: (e: Error) => toast.error(e.message || "Ошибка обновления"),
   });
