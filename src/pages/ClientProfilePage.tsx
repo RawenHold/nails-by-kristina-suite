@@ -36,6 +36,8 @@ const loyalties: { value: "bronze" | "silver" | "gold" | "vip"; label: string }[
   { value: "vip", label: "VIP" },
 ];
 
+type VisitItem = ReturnType<typeof useVisits>["data"] extends (infer U)[] | undefined ? U : never;
+
 export default function ClientProfilePage() {
   const { id } = useParams();
   const [tab, setTab] = useState("Обзор");
@@ -44,6 +46,7 @@ export default function ClientProfilePage() {
   const [reminderNote, setReminderNote] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [visitDetails, setVisitDetails] = useState<VisitItem | null>(null);
   const [editForm, setEditForm] = useState({
     full_name: "",
     phone: "",
