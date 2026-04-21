@@ -6,13 +6,14 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import MonthYearPicker from "@/components/ui/MonthYearPicker";
-import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit, FileText } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit, FileText, TrendingUp, TrendingDown, PiggyBank } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney, parseMoney } from "@/lib/utils";
 import { useIncomes, useCreateIncome, useUpdateIncome, useDeleteIncome, type Income } from "@/hooks/useIncomes";
 import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense, useExpenseCategories, type Expense } from "@/hooks/useExpenses";
 import { useClients } from "@/hooks/useClients";
+import { useAllTimeStats } from "@/hooks/useAllTimeStats";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -41,6 +42,7 @@ export default function FinancesPage() {
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
   const { data: categories } = useExpenseCategories();
   const { data: clients } = useClients();
+  const { data: allTimeStats } = useAllTimeStats();
   const createIncome = useCreateIncome();
   const updateIncomeMut = useUpdateIncome();
   const createExpense = useCreateExpense();
@@ -159,6 +161,41 @@ export default function FinancesPage() {
             <p className="text-sm font-bold text-foreground">{formatMoney(totalIncome - totalExpenses)}</p>
           </GlassCard>
         </div>
+
+        {/* All-time stats */}
+        {allTimeStats && (
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <PiggyBank className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Итого за всё время</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <TrendingUp className="w-3 h-3 text-success" />
+                  <span className="text-[10px] text-muted-foreground">Заработано</span>
+                </div>
+                <span className="text-sm font-bold text-success">{formatMoney(allTimeStats.totalIncome)}</span>
+              </div>
+              <div className="text-center p-2 rounded-xl bg-red-50/50 dark:bg-red-900/10">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <TrendingDown className="w-3 h-3 text-destructive" />
+                  <span className="text-[10px] text-muted-foreground">Потрачено</span>
+                </div>
+                <span className="text-sm font-bold text-destructive">{formatMoney(allTimeStats.totalExpenses)}</span>
+              </div>
+              <div className="text-center p-2 rounded-xl bg-primary/5 dark:bg-primary/10">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <PiggyBank className="w-3 h-3 text-primary" />
+                  <span className="text-[10px] text-muted-foreground">Чистая прибыль</span>
+                </div>
+                <span className={cn("text-sm font-bold", allTimeStats.totalProfit >= 0 ? "text-success" : "text-destructive")}>
+                  {formatMoney(allTimeStats.totalProfit)}
+                </span>
+              </div>
+            </div>
+          </GlassCard>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           <motion.button whileTap={{ scale: 0.97 }} onClick={openCreateIncome}
