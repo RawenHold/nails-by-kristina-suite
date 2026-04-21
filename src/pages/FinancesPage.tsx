@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import MonthYearPicker from "@/components/ui/MonthYearPicker";
-import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Trash2, Edit, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney, parseMoney } from "@/lib/utils";
@@ -33,6 +33,7 @@ export default function FinancesPage() {
   const [editIncome, setEditIncome] = useState<Income | null>(null);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "income" | "expense" } | null>(null);
+  const [details, setDetails] = useState<{ type: "income" | "expense"; data: Income | Expense } | null>(null);
   const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash" as PaymentMethod, note: "" });
   const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
 
