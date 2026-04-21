@@ -128,19 +128,91 @@
     min-height: 100vh;
     transition: background-color 0.4s ease, color 0.4s ease;
   }
-  /* Static mesh background — no animation to keep GPU idle on mobile */
+  /* ----- Time-of-day scene tokens (drive whole-app theming) -----
+     Light theme defaults — mirror HeaderScene day palette. */
+  :root {
+    --scene-top: 200 90% 92%;
+    --scene-mid: 30 90% 96%;
+    --scene-bot: 15 85% 94%;
+    --scene-accent: 38 90% 70%;
+  }
+  html[data-tod="morning"] {
+    --scene-top: 28 95% 90%;
+    --scene-mid: 18 95% 92%;
+    --scene-bot: 350 80% 94%;
+    --scene-accent: 28 95% 70%;
+  }
+  html[data-tod="day"] {
+    --scene-top: 200 90% 92%;
+    --scene-mid: 30 90% 96%;
+    --scene-bot: 15 85% 94%;
+    --scene-accent: 45 100% 72%;
+  }
+  html[data-tod="evening"] {
+    --scene-top: 25 80% 86%;
+    --scene-mid: 350 70% 90%;
+    --scene-bot: 280 50% 90%;
+    --scene-accent: 18 90% 65%;
+  }
+  html[data-tod="night"] {
+    --scene-top: 235 50% 92%;
+    --scene-mid: 260 40% 94%;
+    --scene-bot: 285 35% 94%;
+    --scene-accent: 220 60% 80%;
+  }
+  /* Dark theme — deeper, more saturated versions of the scene palette. */
+  .dark html[data-tod="morning"],
+  html.dark[data-tod="morning"] {
+    --scene-top: 220 25% 10%;
+    --scene-mid: 18 30% 12%;
+    --scene-bot: 350 30% 14%;
+    --scene-accent: 28 70% 45%;
+  }
+  .dark html[data-tod="day"],
+  html.dark[data-tod="day"] {
+    --scene-top: 220 25% 10%;
+    --scene-mid: 215 25% 12%;
+    --scene-bot: 30 20% 13%;
+    --scene-accent: 45 70% 50%;
+  }
+  .dark html[data-tod="evening"],
+  html.dark[data-tod="evening"] {
+    --scene-top: 260 30% 10%;
+    --scene-mid: 285 30% 12%;
+    --scene-bot: 18 35% 13%;
+    --scene-accent: 18 80% 50%;
+  }
+  .dark html[data-tod="night"],
+  html.dark[data-tod="night"] {
+    --scene-top: 235 45% 8%;
+    --scene-mid: 260 40% 11%;
+    --scene-bot: 285 35% 13%;
+    --scene-accent: 220 60% 60%;
+  }
+  /* Default dark (no data-tod yet) */
+  .dark {
+    --scene-top: 235 40% 9%;
+    --scene-mid: 260 35% 11%;
+    --scene-bot: 285 30% 12%;
+    --scene-accent: 220 50% 55%;
+  }
+
+  /* Single static gradient — no animation, GPU-cheap.
+     The whole app's backdrop now subtly mirrors the header scene. */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -2;
     background:
-      radial-gradient(at 18% 12%, hsl(var(--mesh-1)) 0px, transparent 55%),
-      radial-gradient(at 82% 8%, hsl(var(--mesh-3)) 0px, transparent 55%),
-      radial-gradient(at 78% 88%, hsl(var(--mesh-4)) 0px, transparent 55%),
-      radial-gradient(at 12% 92%, hsl(var(--mesh-2)) 0px, transparent 55%);
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--scene-accent) / 0.18) 0%, transparent 60%),
+      linear-gradient(180deg,
+        hsl(var(--scene-top)) 0%,
+        hsl(var(--scene-mid)) 55%,
+        hsl(var(--scene-bot)) 100%);
     background-color: hsl(var(--background));
     pointer-events: none;
+    transition: background 0.6s ease;
   }
   h1, h2, h3, h4 {
     font-family: 'Playfair Display', Georgia, serif;
