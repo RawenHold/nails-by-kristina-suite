@@ -35,10 +35,10 @@ export default function BottomNav() {
                 />
               )}
               <div
-                className={`liquid-glass ${isActive ? "liquid-glass-active" : ""} ${isActive ? "w-12 h-7" : "w-9 h-7"} rounded-full flex items-center justify-center transition-all duration-300`}
+                className={`icon-glow ${isActive ? "icon-glow-active" : ""} w-9 h-7 flex items-center justify-center`}
               >
                 <tab.icon
-                  className={`w-[18px] h-[18px] relative z-10 transition-colors duration-200 ${isActive ? "text-primary" : "text-foreground/70"}`}
+                  className={`w-[20px] h-[20px] transition-colors duration-200 ${isActive ? "" : "text-foreground/65"}`}
                   strokeWidth={isActive ? 2.2 : 1.8}
                 />
               </div>

@@ -267,34 +267,41 @@
   }
   .border-glass-border { border-color: hsl(var(--glass-border)); }
 
-  /* Material You / Android 17 style icon container —
-     soft tonal surface, no glass blur, expressive pill shape on active. */
-  .liquid-glass {
+  /* Iconic glow — no oval container. Icons themselves shimmer with a
+     soft animated multi-hue drop-shadow when active. */
+  .icon-glow {
     position: relative;
-    background: hsl(var(--secondary) / 0.7);
-    border: 1px solid hsl(var(--border) / 0.5);
-    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
-    transition: background-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    transition: transform 0.2s ease;
   }
-  .liquid-glass-active {
-    background: hsl(var(--primary) / 0.18);
-    border-color: hsl(var(--primary) / 0.35);
-    box-shadow:
-      0 2px 10px hsl(var(--primary) / 0.22),
-      inset 0 0 0 1px hsl(var(--primary) / 0.15);
+  .icon-glow:active { transform: scale(0.9); }
+  .icon-glow > svg {
+    transition: filter 0.3s ease, color 0.3s ease, transform 0.3s ease;
   }
-  .dark .liquid-glass {
-    background: hsl(var(--secondary) / 0.85);
-    border-color: hsl(var(--border) / 0.6);
+  .icon-glow-active > svg {
+    color: hsl(var(--primary));
+    animation: iconHueGlow 4s ease-in-out infinite;
   }
-  .dark .liquid-glass-active {
-    background: hsl(var(--primary) / 0.28);
-    border-color: hsl(var(--primary) / 0.5);
-  }
-  /* Material-style state layer ripple on press */
-  .liquid-glass:active {
-    transform: scale(0.94);
-    background: hsl(var(--primary) / 0.12);
+  @keyframes iconHueGlow {
+    0%, 100% {
+      filter:
+        drop-shadow(0 0 4px hsl(var(--primary) / 0.55))
+        drop-shadow(0 0 10px hsl(var(--primary-glow) / 0.45));
+    }
+    33% {
+      filter:
+        drop-shadow(0 0 5px hsl(var(--accent) / 0.6))
+        drop-shadow(0 0 12px hsl(var(--primary) / 0.5));
+    }
+    66% {
+      filter:
+        drop-shadow(0 0 5px hsl(var(--primary-glow) / 0.65))
+        drop-shadow(0 0 12px hsl(var(--accent) / 0.45));
+    }
   }
 }
 
