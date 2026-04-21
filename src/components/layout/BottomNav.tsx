@@ -24,7 +24,7 @@ export default function BottomNav() {
             <button
               key={tab.path}
               onClick={() => navigate(tab.path)}
-              className="relative flex flex-col items-center justify-center min-w-[44px] h-full gap-0.5 transition-colors"
+              className="relative flex flex-col items-center justify-center min-w-[44px] h-full gap-1 transition-colors"
               aria-label={tab.label}
             >
               {isActive && (
@@ -34,10 +34,14 @@ export default function BottomNav() {
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
-              <tab.icon
-                className={`w-[20px] h-[20px] transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}
-                strokeWidth={isActive ? 2.2 : 1.8}
-              />
+              <div
+                className={`liquid-glass ${isActive ? "liquid-glass-active" : ""} w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200`}
+              >
+                <tab.icon
+                  className={`w-[18px] h-[18px] relative z-10 transition-colors duration-200 ${isActive ? "text-primary-foreground" : "text-foreground/70"}`}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                />
+              </div>
               <span className={`text-[9px] font-medium transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                 {tab.label}
               </span>
