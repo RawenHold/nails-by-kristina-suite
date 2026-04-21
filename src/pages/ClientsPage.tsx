@@ -92,10 +92,11 @@ export default function ClientsPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     {client.phone && (
-                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(client.phone!); toast.success("Телефон скопирован"); }}
-                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform">
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
+                      <a href={`tel:${client.phone}`} onClick={(e) => e.stopPropagation()}
+                        className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center active:scale-90 transition-transform"
+                        aria-label="Позвонить">
+                        <Phone className="w-4 h-4 text-success" />
+                      </a>
                     )}
                     <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
                   </div>

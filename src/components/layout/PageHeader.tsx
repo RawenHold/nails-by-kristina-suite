@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { ArrowLeft, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.svg";
+import HeaderScene from "@/components/layout/HeaderScene";
 
 interface PageHeaderProps {
   title: string;
@@ -9,12 +10,42 @@ interface PageHeaderProps {
   action?: ReactNode;
   showBack?: boolean;
   hideSettings?: boolean;
+  /**
+   * When true, renders an animated weather scene background filling the
+   * header area instead of the logo + title block. Used on the home screen.
+   */
+  scene?: boolean;
 }
 
-export default function PageHeader({ title, subtitle, action, showBack, hideSettings }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, action, showBack, hideSettings, scene }: PageHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isSettings = location.pathname === "/settings";
+
+  if (scene) {
+    return (
+      <div className="sticky top-0 z-40 px-4 safe-top pb-3 mb-3">
+        <div className="relative h-32 rounded-3xl overflow-hidden border border-glass-border shadow-[var(--glass-shadow)]">
+          <HeaderScene />
+          {!hideSettings && !isSettings && (
+            <button
+              onClick={() => navigate("/settings")}
+              className="absolute top-3 right-3 w-9 h-9 rounded-2xl bg-background/40 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/20"
+              aria-label="Настройки"
+            >
+              <Settings className="w-4 h-4 text-white drop-shadow" />
+            </button>
+          )}
+          {subtitle && (
+            <div className="absolute bottom-3 left-4 right-4">
+              <p className="text-sm font-medium text-white/95 drop-shadow-md">{subtitle}</p>
+            </div>
+          )}
+          {action && <div className="absolute top-3 left-3">{action}</div>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="sticky top-0 z-40 glass-header px-4 safe-top pb-4 mb-3">
