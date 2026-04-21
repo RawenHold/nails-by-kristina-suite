@@ -1,5 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { installAutoFlush } from "@/lib/offline/queue";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +25,28 @@ import NotFound from "./pages/NotFound";
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.svg";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Keep data fresh-enough offline; React Query will refetch on reconnect
+      gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days — needed for persister
+      staleTime: 1000 * 30,
+      retry: (failureCount, err: any) => {
+        // Don't hammer if offline
+        if (typeof navigator !== "undefined" && !navigator.onLine) return false;
+        return failureCount < 2;
+      },
+      networkMode: "offlineFirst",
+    },
+    mutations: {
+      networkMode: "offlineFirst",
+    },
+  },
+});
+
+const persister = typeof window !== "undefined"
+  ? createSyncStoragePersister({ storage: window.localStorage, key: "knails-rq-cache" })
+  : undefined;
 
 function LoadingScreen() {
   return (
@@ -63,20 +88,35 @@ function AppRoutes() {
   );
 }
 
+function AutoFlushBoot() {
+  useEffect(() => {
+    installAutoFlush(() => queryClient.invalidateQueries());
+  }, []);
+  return null;
+}
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister: persister!,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      buster: "v1",
+    }}
+  >
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
           <SideMenuProvider>
+            <AutoFlushBoot />
             <AppRoutes />
           </SideMenuProvider>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;

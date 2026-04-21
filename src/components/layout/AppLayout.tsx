@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import BottomNav from "./BottomNav";
 import SideMenu from "./SideMenu";
+import OfflineIndicator from "./OfflineIndicator";
 import { useSideMenu } from "@/contexts/SideMenuContext";
 import { useTimeOfDay } from "@/hooks/useTimeOfDay";
 
@@ -93,6 +94,7 @@ export default function AppLayout() {
         <Outlet />
       </main>
       <BottomNav />
+      <OfflineIndicator />
       <SideMenu open={open} onClose={closeMenu} />
     </div>
   );
