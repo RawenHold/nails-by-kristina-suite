@@ -64,8 +64,8 @@ export default function DatePickerSheet({ value, onChange }: DatePickerSheetProp
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm glass-card-elevated rounded-3xl p-4"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
+              {/* Header — 3-column grid keeps title perfectly centered */}
+              <div className="grid grid-cols-[auto,1fr,auto] items-center gap-2 mb-3">
                 <button
                   onClick={() => {
                     if (pickMode === "day") setViewMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
@@ -80,14 +80,14 @@ export default function DatePickerSheet({ value, onChange }: DatePickerSheetProp
 
                 <button
                   onClick={() => setPickMode(m => m === "day" ? "month" : m === "month" ? "year" : "day")}
-                  className="px-3 h-9 rounded-xl bg-primary/8 text-foreground font-display font-semibold text-sm capitalize active:scale-95"
+                  className="h-9 mx-auto px-4 rounded-xl bg-primary/8 text-foreground font-display font-semibold text-sm capitalize active:scale-95 truncate max-w-full"
                 >
                   {pickMode === "day" && format(viewMonth, "LLLL yyyy", { locale: ru })}
                   {pickMode === "month" && format(viewMonth, "yyyy")}
                   {pickMode === "year" && `${yearStart} – ${yearStart + 11}`}
                 </button>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => {
                       if (pickMode === "day") setViewMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
