@@ -14,6 +14,7 @@ import { cn, formatMoney, parseMoney } from "@/lib/utils";
 import { useAppointments, useCreateAppointment, useUpdateAppointmentStatus, useUpdateAppointment, useCompleteAppointment, useDeleteAppointment, type Appointment } from "@/hooks/useAppointments";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
+import DatePickerSheet from "@/components/ui/DatePickerSheet";
 
 const statusColors: Record<string, string> = {
   planned: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
