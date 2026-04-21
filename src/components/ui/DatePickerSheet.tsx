@@ -25,7 +25,7 @@ export default function DatePickerSheet({ value, onChange }: DatePickerSheetProp
     if (!monthMap) return {};
     const withActive: Date[] = [];
     const withCompleted: Date[] = [];
-    for (const [key, info] of monthMap.entries()) {
+    for (const [key, info] of Object.entries(monthMap)) {
       const [y, m, d] = key.split("-").map(Number);
       const date = new Date(y, m - 1, d);
       if (info.hasActive) withActive.push(date);
