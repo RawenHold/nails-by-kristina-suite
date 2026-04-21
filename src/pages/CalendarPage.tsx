@@ -251,6 +251,16 @@ export default function CalendarPage() {
               {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Дата визита</label>
+            <div className="flex items-center justify-between gap-2 input-glass h-12 px-3">
+              <span className="text-sm font-medium text-foreground">
+                {format(form.date, "d MMMM yyyy", { locale: ru })}
+              </span>
+              <DatePickerSheet value={form.date} onChange={(d) => setForm({ ...form, date: d })} />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Можно выбрать прошедшую дату — для записи старых визитов</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Начало</label>
