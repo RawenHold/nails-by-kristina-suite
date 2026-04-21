@@ -261,7 +261,25 @@
     100% { background-position: -200% 0; }
   }
   .input-glass {
-    @apply w-full h-11 px-4 rounded-2xl bg-secondary/60 backdrop-blur-md text-foreground text-sm border border-glass-border focus:outline-none focus:ring-2 focus:ring-primary/25 transition;
+    @apply w-full h-11 px-4 rounded-2xl bg-secondary/60 text-foreground text-sm border border-glass-border focus:outline-none focus:ring-2 focus:ring-primary/25 transition;
   }
   .border-glass-border { border-color: hsl(var(--glass-border)); }
+}
+
+/* Native mobile: opt-out of expensive shimmer animation cadence to
+   reduce CPU/GPU usage and prevent overheating. */
+body.is-native .shimmer {
+  animation-duration: 2.5s;
+}
+
+/* Respect user's OS-level reduce-motion preference everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
