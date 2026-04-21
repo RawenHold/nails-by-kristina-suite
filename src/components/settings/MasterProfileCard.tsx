@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Pencil, X, Phone, Instagram, Send, User as UserIcon, Loader2 } from "lucide-react";
+import { Camera, Pencil, X, Phone, Instagram, Send, User as UserIcon, Loader2, Trash2 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
-import { useMasterProfile, useUpsertMasterProfile, useUploadMasterAvatar } from "@/hooks/useMasterProfile";
+import { useMasterProfile, useUpsertMasterProfile, useUploadMasterAvatar, useDeleteMasterAvatar } from "@/hooks/useMasterProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ export default function MasterProfileCard() {
   const { data: profile } = useMasterProfile();
   const upsert = useUpsertMasterProfile();
   const uploadAvatar = useUploadMasterAvatar();
+  const deleteAvatar = useDeleteMasterAvatar();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
@@ -130,12 +131,30 @@ export default function MasterProfileCard() {
               )}
             </div>
           </div>
-          <button
-            onClick={openEdit}
-            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center active:scale-90 shrink-0"
-          >
-            <Pencil className="w-4 h-4 text-primary" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {profile?.avatar_url && (
+              <button
+                onClick={() => {
+                  if (confirm("Удалить аватар?")) deleteAvatar.mutate();
+                }}
+                disabled={deleteAvatar.isPending}
+                className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90 disabled:opacity-50"
+                aria-label="Удалить аватар"
+              >
+                {deleteAvatar.isPending ? (
+                  <Loader2 className="w-4 h-4 text-destructive animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={openEdit}
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center active:scale-90"
+            >
+              <Pencil className="w-4 h-4 text-primary" />
+            </button>
+          </div>
         </div>
       </GlassCard>
 

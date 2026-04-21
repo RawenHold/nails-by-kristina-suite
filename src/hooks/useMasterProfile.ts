@@ -79,3 +79,29 @@ export function useUploadMasterAvatar() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+export function useDeleteMasterAvatar() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      // Best-effort cleanup of stored files for this user
+      const { data: list } = await supabase.storage.from("master-avatars").list(user.id);
+      if (list && list.length > 0) {
+        await supabase.storage
+          .from("master-avatars")
+          .remove(list.map((f) => `${user.id}/${f.name}`));
+      }
+      const { error } = await supabase
+        .from("master_profile")
+        .upsert({ owner_id: user.id, avatar_url: null }, { onConflict: "owner_id" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["master_profile"] });
+      toast.success("Аватар удалён");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
