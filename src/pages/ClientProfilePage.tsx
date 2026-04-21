@@ -248,7 +248,7 @@ export default function ClientProfilePage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
             {!visits?.length ? <EmptyState icon={CalendarDays} title="Нет визитов" description="История появится после первого визита" /> :
               visits.map((visit) => (
-                <GlassCard key={visit.id} className="py-3">
+                <GlassCard key={visit.id} className="py-3" onClick={() => setVisitDetails(visit)}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-xs font-semibold text-foreground">{format(new Date(visit.visit_date), "d MMMM yyyy", { locale: ru })}</p>
