@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Pencil, X, Phone, Instagram, Send, User as UserIcon, Loader2 } from "lucide-react";
+import { Camera, Pencil, X, Phone, Instagram, Send, User as UserIcon, Loader2, Trash2 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
-import { useMasterProfile, useUpsertMasterProfile, useUploadMasterAvatar } from "@/hooks/useMasterProfile";
+import { useMasterProfile, useUpsertMasterProfile, useUploadMasterAvatar, useDeleteMasterAvatar } from "@/hooks/useMasterProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
