@@ -46,7 +46,12 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      navigate("/", { replace: true });
+      // Detect password-recovery flow (Supabase puts type=recovery in hash or query)
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const search = new URLSearchParams(window.location.search);
+      const isRecovery = hash.get("type") === "recovery" || search.get("type") === "recovery";
+
+      navigate(isRecovery ? "/reset-password" : "/", { replace: true });
     };
 
     void handleCallback();

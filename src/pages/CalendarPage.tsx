@@ -5,7 +5,7 @@ import FloatingActionButton from "@/components/ui/FloatingActionButton";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
-import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Check, Trash2, Edit, FileText, Phone } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -44,6 +44,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
+  const [viewing, setViewing] = useState<Appointment | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as PaymentMethod, note: "" });
@@ -194,7 +195,7 @@ export default function CalendarPage() {
           <div className="space-y-2">
             {appointments.map((apt, i) => (
               <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <GlassCard className="py-3">
+                <GlassCard className="py-3 cursor-pointer" onClick={() => setViewing(apt)}>
                   <div className="flex items-start gap-3">
                     <div className="flex flex-col items-center gap-1 pt-0.5 min-w-[44px]">
                       <span className="text-sm font-bold text-foreground">{format(new Date(apt.start_time), "HH:mm")}</span>
@@ -216,7 +217,10 @@ export default function CalendarPage() {
                           ? `${formatMoney(apt.final_price)} сум · оплачено`
                           : `${formatMoney(apt.expected_price)} сум`}
                       </p>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      {apt.notes && (
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 whitespace-pre-line">{apt.notes}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                         {apt.status !== "completed" && apt.status !== "canceled" && (
                           <>
                             {apt.status === "planned" && (
@@ -395,6 +399,103 @@ export default function CalendarPage() {
       <ConfirmDialog open={!!deleteId} onConfirm={() => { if (deleteId) deleteAppointment.mutate(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)} title="Удалить запись?"
         description="Это действие нельзя отменить. Связанный визит и доход также будут удалены." />
+
+      {/* Appointment details */}
+      <BottomSheet
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        title="Детали записи"
+      >
+        {viewing && (
+          <div className="space-y-3 pb-2">
+            <GlassCard className="text-center py-4">
+              <p className="text-xs text-muted-foreground">Клиентка</p>
+              <p className="text-base font-semibold text-foreground mt-0.5">{viewing.clients?.full_name || "—"}</p>
+              <span className={cn("inline-block mt-2 text-[10px] font-semibold px-2.5 py-0.5 rounded-full", statusColors[viewing.status])}>
+                {statusLabels[viewing.status]}
+              </span>
+            </GlassCard>
+
+            <div className="grid grid-cols-2 gap-2">
+              <GlassCard className="text-center py-3">
+                <p className="text-[10px] text-muted-foreground mb-0.5">Дата</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {format(new Date(viewing.start_time), "d MMM yyyy", { locale: ru })}
+                </p>
+              </GlassCard>
+              <GlassCard className="text-center py-3">
+                <p className="text-[10px] text-muted-foreground mb-0.5">Время</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {format(new Date(viewing.start_time), "HH:mm")} – {format(new Date(viewing.end_time), "HH:mm")}
+                </p>
+              </GlassCard>
+            </div>
+
+            {viewing.appointment_services && viewing.appointment_services.length > 0 && (
+              <GlassCard>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">Услуги</p>
+                <div className="space-y-1.5">
+                  {viewing.appointment_services.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground">{s.services?.name || "Услуга"}</span>
+                      <span className="font-semibold text-foreground">{formatMoney(s.price)} сум</span>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+
+            <GlassCard>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {viewing.status === "completed" ? "Оплачено" : "Ожидается"}
+                </span>
+                <span className="text-base font-bold text-primary">
+                  {formatMoney(viewing.status === "completed" && viewing.final_price != null ? viewing.final_price : viewing.expected_price)} сум
+                </span>
+              </div>
+            </GlassCard>
+
+            {viewing.notes && (
+              <GlassCard>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-3 h-3" /> Заметки
+                </p>
+                <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{viewing.notes}</p>
+              </GlassCard>
+            )}
+
+            {viewing.clients?.phone && (
+              <GlassCard className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5" /> {viewing.clients.phone}
+                </span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(viewing.clients!.phone!); toast.success("Скопировано"); }}
+                  className="text-[11px] font-semibold text-primary active:opacity-70"
+                >
+                  Копировать
+                </button>
+              </GlassCard>
+            )}
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => { const apt = viewing; setViewing(null); openEdit(apt); }}
+                className="h-11 rounded-2xl bg-secondary/70 text-foreground font-semibold text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <Edit className="w-4 h-4" /> Изменить
+              </button>
+              <button
+                onClick={() => { const id = viewing.id; setViewing(null); setDeleteId(id); }}
+                className="h-11 rounded-2xl bg-destructive/10 text-destructive font-semibold text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <Trash2 className="w-4 h-4" /> Удалить
+              </button>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
 
       <FloatingActionButton onClick={() => { setEditing(null); setForm(emptyForm); setShowForm(true); }} />
     </div>
