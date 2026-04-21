@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 export type QueueOp = "insert" | "update" | "upsert" | "delete";
-export type AnyTable = Parameters<typeof supabase.from>[0];
+export type AnyTable = string;
 
 export interface QueuedMutation {
   id?: number;
@@ -82,7 +82,7 @@ async function updateMutation(m: QueuedMutation) {
 /* ------------------------------- replay ---------------------------------- */
 
 async function replayOne(m: QueuedMutation): Promise<void> {
-  const q: any = supabase.from(m.table);
+  const q: any = supabase.from(m.table as any);
   switch (m.op) {
     case "insert": {
       const { error } = await q.insert(m.payload);
