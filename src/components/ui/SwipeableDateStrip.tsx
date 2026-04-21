@@ -46,6 +46,7 @@ export default function SwipeableDateStrip({ value, onChange, range = 90 }: Swip
   return (
     <div
       ref={scrollerRef}
+      data-no-swipe-nav
       className="overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 scroll-smooth overscroll-x-contain"
       style={{ WebkitOverflowScrolling: "touch" }}
     >
