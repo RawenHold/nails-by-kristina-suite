@@ -73,6 +73,7 @@ export default function CalendarPage() {
     setEditing(apt);
     setForm({
       client_id: apt.client_id || "",
+      date: start,
       start_hour: start.getHours().toString().padStart(2, "0"),
       start_min: start.getMinutes().toString().padStart(2, "0"),
       end_hour: end.getHours().toString().padStart(2, "0"),
