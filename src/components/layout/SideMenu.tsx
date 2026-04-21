@@ -149,11 +149,9 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                       <button
                         key={it.path}
                         onClick={() => go(it.path)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
+                        className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 active:bg-secondary/80 transition-colors text-left"
                       >
-                        <div className="icon-glow icon-glow-active w-9 h-9 flex items-center justify-center">
-                          <it.icon className="w-[18px] h-[18px]" />
-                        </div>
+                        <it.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.8} />
                         <span className="text-sm font-medium text-foreground">{it.label}</span>
                       </button>
                     ))}
@@ -168,21 +166,17 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                 <div className="space-y-1">
                   <button
                     onClick={() => go("/settings")}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
+                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 active:bg-secondary/80 transition-colors text-left"
                   >
-                    <div className="icon-glow w-9 h-9 flex items-center justify-center">
-                      <Settings className="w-[18px] h-[18px] text-foreground/80" />
-                    </div>
+                    <Settings className="w-[18px] h-[18px] text-muted-foreground group-hover:text-foreground transition-colors" strokeWidth={1.8} />
                     <span className="text-sm font-medium text-foreground">Настройки</span>
                   </button>
 
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-destructive/10 transition-colors text-left"
+                    className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-destructive/10 active:bg-destructive/20 transition-colors text-left"
                   >
-                    <div className="icon-glow w-9 h-9 flex items-center justify-center">
-                      <LogOut className="w-[18px] h-[18px] text-destructive" style={{ filter: "drop-shadow(0 0 6px hsl(var(--destructive) / 0.5))" }} />
-                    </div>
+                    <LogOut className="w-[18px] h-[18px] text-destructive/80 group-hover:text-destructive transition-colors" strokeWidth={1.8} />
                     <span className="text-sm font-medium text-destructive">Выйти</span>
                   </button>
                 </div>
