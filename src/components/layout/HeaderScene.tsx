@@ -229,6 +229,17 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
           0% { transform: translateX(440px); }
           100% { transform: translateX(-80px); }
         }
+        @keyframes flutterPath {
+          0%   { transform: translate(0, 0); }
+          25%  { transform: translate(80px, -10px); }
+          50%  { transform: translate(160px, 6px); }
+          75%  { transform: translate(80px, 14px); }
+          100% { transform: translate(0, 0); }
+        }
+        @keyframes flap {
+          0%, 100% { transform: scaleY(1); }
+          50%      { transform: scaleY(0.4); }
+        }
         @media (prefers-reduced-motion: reduce) {
           [aria-hidden="true"] * { animation: none !important; }
         }
@@ -256,6 +267,83 @@ function Cloud({
       <circle cx="-12" cy="2" r="9" fill={fill} />
       <circle cx="0" cy="-2" r="11" fill={fill} />
       <circle cx="13" cy="3" r="9" fill={fill} />
+    </g>
+  );
+}
+
+function Bird({
+  x,
+  y,
+  scale = 1,
+  fill,
+  opacity = 1,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  fill: string;
+  opacity?: number;
+}) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity}>
+      <path
+        d="M -8 0 Q -4 -5 0 0 Q 4 -5 8 0"
+        fill="none"
+        stroke={fill}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        style={{ animation: "flap 0.6s ease-in-out infinite", transformOrigin: "0px 0px" }}
+      />
+    </g>
+  );
+}
+
+function Butterfly({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <g style={{ animation: "flap 0.35s ease-in-out infinite", transformOrigin: "0px 0px" }}>
+        <ellipse cx="-3" cy="-1.5" rx="3" ry="2.4" fill="hsl(330 80% 65%)" opacity="0.9" />
+        <ellipse cx="-3" cy="2" rx="2.2" ry="1.8" fill="hsl(330 80% 70%)" opacity="0.85" />
+        <ellipse cx="3" cy="-1.5" rx="3" ry="2.4" fill="hsl(280 70% 70%)" opacity="0.9" />
+        <ellipse cx="3" cy="2" rx="2.2" ry="1.8" fill="hsl(280 70% 75%)" opacity="0.85" />
+      </g>
+      <ellipse cx="0" cy="0" rx="0.5" ry="2.4" fill="hsl(0 0% 15%)" />
+    </g>
+  );
+}
+
+function TreeRow({ y, fill }: { y: number; fill: string }) {
+  const tops = [
+    { cx: 20, r: 8 }, { cx: 55, r: 11 }, { cx: 90, r: 7 }, { cx: 120, r: 10 },
+    { cx: 160, r: 8 }, { cx: 195, r: 12 }, { cx: 235, r: 9 }, { cx: 270, r: 11 },
+    { cx: 305, r: 8 }, { cx: 340, r: 10 }, { cx: 380, r: 9 },
+  ];
+  return (
+    <g transform={`translate(0 ${y})`}>
+      <rect x="0" y="6" width="400" height="30" fill={fill} />
+      {tops.map((t, i) => (
+        <circle key={i} cx={t.cx} cy={6} r={t.r} fill={fill} />
+      ))}
+    </g>
+  );
+}
+
+function TreeRowNear({ y, fill }: { y: number; fill: string }) {
+  return (
+    <g transform={`translate(0 ${y})`}>
+      <rect x="0" y="4" width="400" height="22" fill={fill} />
+      {[10, 45, 78, 115, 155, 200, 245, 290, 330, 370].map((cx, i) => {
+        const h = 10 + ((i * 7) % 6);
+        return (
+          <path
+            key={i}
+            d={`M ${cx - 6} 6 L ${cx} ${6 - h} L ${cx + 6} 6 Z`}
+            fill={fill}
+          />
+        );
+      })}
+      <ellipse cx="60" cy="8" rx="9" ry="4" fill={fill} />
+      <ellipse cx="225" cy="8" rx="11" ry="4" fill={fill} />
     </g>
   );
 }
