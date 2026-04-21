@@ -62,6 +62,7 @@ export default function DatePickerSheet({ value, onChange }: DatePickerSheetProp
               exit={{ y: 40, opacity: 0, scale: 0.96 }}
               transition={{ type: "spring", damping: 24, stiffness: 320 }}
               onClick={(e) => e.stopPropagation()}
+              data-no-swipe-nav
               className="w-full max-w-sm glass-card-elevated rounded-3xl p-4"
             >
               {/* Header — 3-column grid keeps title perfectly centered */}
