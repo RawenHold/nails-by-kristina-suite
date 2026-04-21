@@ -36,11 +36,15 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
     .join("")
     .toUpperCase();
 
-  const navItems = [
+  const workSection = [
     { icon: CalendarDays, label: "Календарь", path: "/calendar" },
     { icon: Users, label: "Клиенты", path: "/clients" },
+  ];
+  const contentSection = [
     { icon: ImageIcon, label: "Галерея", path: "/gallery" },
     { icon: Timer, label: "Таймер", path: "/timer" },
+  ];
+  const financeSection = [
     { icon: Wallet, label: "Финансы", path: "/finances" },
   ];
 
