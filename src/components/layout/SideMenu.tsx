@@ -151,8 +151,8 @@ export default function SideMenu({ open, onClose }: SideMenuProps) {
                         onClick={() => go(it.path)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl active:bg-secondary/70 transition-colors text-left"
                       >
-                        <div className="liquid-glass liquid-glass-active w-9 h-9 rounded-xl flex items-center justify-center">
-                          <it.icon className="w-4 h-4 text-primary-foreground relative z-10" />
+                        <div className="liquid-glass liquid-glass-active w-9 h-9 rounded-2xl flex items-center justify-center">
+                          <it.icon className="w-4 h-4 text-primary relative z-10" />
                         </div>
                         <span className="text-sm font-medium text-foreground">{it.label}</span>
                       </button>
