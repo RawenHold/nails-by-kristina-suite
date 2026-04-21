@@ -115,20 +115,25 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
 
             {/* Moon */}
             <g style={{ animation: "floatY 6s ease-in-out infinite" }}>
-              <circle cx="320" cy="48" r="38" fill="url(#moon-glow)" />
-              <circle cx="320" cy="48" r="22" fill="url(#moon-core)" />
+              <circle cx="320" cy="36" r="32" fill="url(#moon-glow)" />
+              <circle cx="320" cy="36" r="18" fill="url(#moon-core)" />
               {/* craters */}
-              <circle cx="312" cy="42" r="3" fill="hsl(40 18% 78%)" opacity="0.7" />
-              <circle cx="328" cy="52" r="2.2" fill="hsl(40 18% 78%)" opacity="0.6" />
-              <circle cx="318" cy="56" r="1.6" fill="hsl(40 18% 78%)" opacity="0.5" />
+              <circle cx="313" cy="31" r="2.4" fill="hsl(40 18% 78%)" opacity="0.7" />
+              <circle cx="326" cy="40" r="1.8" fill="hsl(40 18% 78%)" opacity="0.6" />
+              <circle cx="318" cy="43" r="1.3" fill="hsl(40 18% 78%)" opacity="0.5" />
             </g>
 
             {/* Drifting clouds */}
             <g style={{ animation: "driftL 28s linear infinite" }}>
-              <Cloud x={60} y={62} scale={1.1} fill="url(#cloud-night)" opacity={0.85} />
+              <Cloud x={60} y={50} scale={0.9} fill="url(#cloud-night)" opacity={0.85} />
             </g>
             <g style={{ animation: "driftR 36s linear infinite" }}>
-              <Cloud x={220} y={78} scale={0.9} fill="url(#cloud-night)" opacity={0.7} />
+              <Cloud x={220} y={62} scale={0.75} fill="url(#cloud-night)" opacity={0.7} />
+            </g>
+
+            {/* Owl silhouette flying */}
+            <g style={{ animation: "driftR 24s linear infinite" }}>
+              <Bird x={0} y={42} scale={0.55} fill="hsl(240 30% 12%)" opacity={0.85} />
             </g>
           </>
         ) : (
@@ -137,20 +142,20 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
             <g style={{ animation: "floatY 5s ease-in-out infinite" }}>
               <circle
                 cx="320"
-                cy="46"
-                r="46"
+                cy="34"
+                r="38"
                 fill="url(#sun-glow)"
-                style={{ animation: "pulseGlow 4s ease-in-out infinite", transformOrigin: "320px 46px" }}
+                style={{ animation: "pulseGlow 4s ease-in-out infinite", transformOrigin: "320px 34px" }}
               />
-              <circle cx="320" cy="46" r="22" fill="url(#sun-core)" />
+              <circle cx="320" cy="34" r="18" fill="url(#sun-core)" />
             </g>
 
             {/* Sparkles */}
             {[
-              { cx: 50, cy: 20, d: "0s" },
-              { cx: 130, cy: 14, d: "0.8s" },
-              { cx: 215, cy: 22, d: "1.4s" },
-              { cx: 90, cy: 40, d: "2s" },
+              { cx: 50, cy: 16, d: "0s" },
+              { cx: 130, cy: 10, d: "0.8s" },
+              { cx: 215, cy: 18, d: "1.4s" },
+              { cx: 90, cy: 32, d: "2s" },
             ].map((s, i) => (
               <g
                 key={i}
@@ -169,13 +174,38 @@ export default function HeaderScene({ className = "" }: { className?: string }) 
 
             {/* Drifting fluffy clouds */}
             <g style={{ animation: "driftL 32s linear infinite" }}>
-              <Cloud x={70} y={66} scale={1.15} fill="url(#cloud-day)" opacity={0.95} />
+              <Cloud x={70} y={52} scale={0.95} fill="url(#cloud-day)" opacity={0.95} />
             </g>
             <g style={{ animation: "driftR 42s linear infinite" }}>
-              <Cloud x={240} y={82} scale={0.95} fill="url(#cloud-day)" opacity={0.85} />
+              <Cloud x={240} y={64} scale={0.8} fill="url(#cloud-day)" opacity={0.85} />
+            </g>
+
+            {/* Birds gliding */}
+            <g style={{ animation: "driftR 22s linear infinite" }}>
+              <Bird x={0} y={26} scale={0.5} fill="hsl(225 35% 30%)" opacity={0.7} />
+              <Bird x={18} y={32} scale={0.35} fill="hsl(225 35% 30%)" opacity={0.6} />
+            </g>
+
+            {/* Butterfly */}
+            <g
+              style={{
+                animation: "flutterPath 14s ease-in-out infinite",
+                transformOrigin: "center",
+              }}
+            >
+              <Butterfly x={130} y={54} scale={0.7} />
             </g>
           </>
         )}
+
+        {/* Tree silhouettes — far layer */}
+        <g opacity="0.55">
+          <TreeRow fill={isNight ? "url(#tree-night)" : "url(#tree-day)"} y={68} />
+        </g>
+        {/* Tree silhouettes — near layer */}
+        <g>
+          <TreeRowNear fill={isNight ? "url(#tree-night)" : "url(#tree-day)"} y={74} />
+        </g>
       </svg>
 
       <style>{`
