@@ -186,6 +186,9 @@ export default function SettingsPage() {
           )}
         </GlassCard>
 
+        {/* Backup & restore */}
+        <BackupCard />
+
         {/* Sign out */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={handleSignOut}
           className="w-full h-12 rounded-2xl bg-destructive/10 text-destructive font-semibold text-sm flex items-center justify-center gap-2">
