@@ -21,8 +21,8 @@ export default function BackupCard() {
       setProgress({ msg: "Подготовка…", pct: 0 });
       const blob = await createBackup((msg, pct) => setProgress({ msg, pct: pct ?? 0 }));
       const fname = `knails-backup-${format(new Date(), "yyyy-MM-dd_HH-mm")}.zip`;
-      downloadBlob(blob, fname);
-      toast.success("Бэкап создан и скачан");
+      const where = await downloadBlob(blob, fname);
+      toast.success(`Бэкап сохранён · ${where}`);
     } catch (e: any) {
       toast.error(e?.message || "Не удалось создать бэкап");
     } finally {
