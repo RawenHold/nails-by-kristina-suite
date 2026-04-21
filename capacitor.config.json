@@ -5,6 +5,18 @@
   "server": {
     "androidScheme": "https"
   },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#FAF7F2"
+  },
+  "ios": {
+    "contentInset": "always",
+    "scrollEnabled": true,
+    "preferredContentMode": "mobile",
+    "backgroundColor": "#FAF7F2"
+  },
   "plugins": {
     "Browser": {
       "presentationStyle": "popover"
