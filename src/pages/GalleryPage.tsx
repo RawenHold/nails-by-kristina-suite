@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { usePhotos, useToggleFavorite, useDeletePhoto, useUploadPhoto, useBulkDeletePhotos, type VisitPhoto } from "@/hooks/usePhotos";
 import { useVisits } from "@/hooks/useVisits";
 import { useClients } from "@/hooks/useClients";
+import { savePhotoToDevice } from "@/lib/savePhoto";
 
 type FilterMode = "all" | "favorites";
 
@@ -125,15 +126,12 @@ export default function GalleryPage() {
   const handleDownload = async () => {
     if (!selectedPhoto?.url) return;
     try {
-      const res = await fetch(selectedPhoto.url);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `photo-${selectedPhoto.id}.jpg`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Фото сохранено");
-    } catch { toast.error("Ошибка скачивания"); }
+      const filename = `knails-photo-${selectedPhoto.id}.jpg`;
+      const target = await savePhotoToDevice(selectedPhoto.url, filename);
+      toast.success(target === "native" ? "Сохранено в Файлы" : "Фото скачано");
+    } catch {
+      toast.error("Ошибка сохранения");
+    }
   };
 
   const handleUpload = async (files: FileList | null) => {
@@ -337,8 +335,10 @@ export default function GalleryPage() {
               </div>
             </div>
 
-            {/* Swipeable photo area */}
-            <div className="flex-1 overflow-hidden relative">
+            {/* Swipeable photo area — touch-action:none stops the page (and
+                browser back-swipe / bottom-nav swipe) from intercepting the
+                horizontal drag used to flip between photos. */}
+            <div className="flex-1 overflow-hidden relative" style={{ touchAction: "none", overscrollBehavior: "contain" }}>
               <motion.div
                 key={selectedPhoto.id}
                 drag="x"
@@ -350,9 +350,10 @@ export default function GalleryPage() {
                 }}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
+                style={{ touchAction: "none" }}
                 className="w-full h-full flex items-center justify-center px-2"
               >
-                <img src={selectedPhoto.url} alt="" className="max-w-full max-h-full rounded-3xl object-contain select-none pointer-events-none" />
+                <img src={selectedPhoto.url} alt="" className="max-w-full max-h-full rounded-3xl object-contain select-none pointer-events-none" draggable={false} />
               </motion.div>
             </div>
 
