@@ -37,7 +37,7 @@ export default function PageHeader({ title, subtitle, action, showBack, hideSett
           {showMenu && (
             <button
               onClick={openMenu}
-              className="absolute top-2 left-2 w-9 h-9 rounded-2xl bg-background/40 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/20 z-10"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-2xl bg-background/40 backdrop-blur-md flex items-center justify-center active:scale-90 border border-white/20 z-10"
               aria-label="Меню"
             >
               <Menu className="w-4 h-4 text-white drop-shadow" />
