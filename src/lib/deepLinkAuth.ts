@@ -31,6 +31,17 @@ export function getAuthRedirectUrl(): string {
 }
 
 /**
+ * Password reset links must always use an HTTPS URL.
+ * On native we send users through the published auth bridge, which then
+ * forwards them back into the app via the custom scheme.
+ */
+export function getPasswordResetRedirectUrl(): string {
+  return Capacitor.isNativePlatform()
+    ? `${PUBLISHED_AUTH_BRIDGE_URL}?native=1`
+    : `${window.location.origin}/reset-password`;
+}
+
+/**
  * Consumes an auth callback URL and establishes the session when tokens or a
  * PKCE code are present.
  */
