@@ -8,8 +8,8 @@ import { useTimeOfDay } from "@/hooks/useTimeOfDay";
 
 const EDGE_THRESHOLD = 24; // px from left edge to start menu gesture
 const OPEN_THRESHOLD = 60; // px horizontal travel to trigger menu
-const SWIPE_NAV_THRESHOLD = 80; // px horizontal travel to switch tab
-const SWIPE_VERTICAL_TOLERANCE = 1.4; // dx must dominate dy
+const SWIPE_NAV_THRESHOLD = 120; // px horizontal travel to switch tab (raised to avoid accidents)
+const SWIPE_VERTICAL_TOLERANCE = 2; // dx must clearly dominate dy
 
 // Tabs participating in horizontal swipe navigation (matches BottomNav order)
 const SWIPE_TABS = ["/", "/calendar", "/clients", "/gallery", "/timer", "/finances"];
@@ -25,13 +25,26 @@ export default function AppLayout() {
 
   // Edge-swipe (open menu) + content-swipe (switch tab) gestures
   useEffect(() => {
+    const isInteractive = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      // Skip gestures inside any form input, editable area, scroller, modal/sheet, or explicitly opted-out region
+      return !!el.closest(
+        'input, textarea, select, button, [contenteditable="true"], [role="dialog"], [role="menu"], [data-no-swipe-nav], [data-radix-popper-content-wrapper], [data-state="open"]'
+      );
+    };
+
     const onTouchStart = (e: TouchEvent) => {
       if (open) return;
+      // Ignore multi-touch (pinch/zoom on photos)
+      if (e.touches.length > 1) {
+        edgeRef.current = null;
+        swipeRef.current = null;
+        return;
+      }
       const t = e.touches[0];
       if (!t) return;
-      // Ignore gestures starting on interactive horizontal scrollers/sliders
       const target = e.target as HTMLElement | null;
-      if (target?.closest("[data-no-swipe-nav]")) {
+      if (isInteractive(target)) {
         edgeRef.current = null;
         swipeRef.current = null;
         return;
