@@ -25,11 +25,18 @@ export default function AppLayout() {
 
   // Edge-swipe (open menu) + content-swipe (switch tab) gestures
   useEffect(() => {
+    const SKIP_SELECTOR =
+      'input, textarea, select, button, [contenteditable="true"], [contenteditable=""], [role="dialog"], [role="menu"], [role="listbox"], [role="combobox"], [data-no-swipe-nav], [data-radix-popper-content-wrapper], [data-state="open"]';
+
     const isInteractive = (el: HTMLElement | null): boolean => {
       if (!el) return false;
-      // Skip gestures inside any form input, editable area, scroller, modal/sheet, or explicitly opted-out region
-      return !!el.closest(
-        'input, textarea, select, button, [contenteditable="true"], [role="dialog"], [role="menu"], [data-no-swipe-nav], [data-radix-popper-content-wrapper], [data-state="open"]'
+      return !!el.closest(SKIP_SELECTOR);
+    };
+
+    // Any open modal/sheet/dialog anywhere in the DOM disables tab swipe entirely.
+    const isAnyOverlayOpen = (): boolean => {
+      return !!document.querySelector(
+        '[data-bottom-sheet="open"], [role="dialog"][data-state="open"], [data-radix-popper-content-wrapper]'
       );
     };
 
@@ -43,8 +50,18 @@ export default function AppLayout() {
       }
       const t = e.touches[0];
       if (!t) return;
-      const target = e.target as HTMLElement | null;
-      if (isInteractive(target)) {
+      // If any overlay is open, never start a swipe.
+      if (isAnyOverlayOpen()) {
+        edgeRef.current = null;
+        swipeRef.current = null;
+        return;
+      }
+      // Use elementFromPoint as well — on Android WebView e.target can resolve
+      // to a parent element, missing inputs/sheets layered on top.
+      const target = (e.target as HTMLElement | null) ||
+        (document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null);
+      const pointEl = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
+      if (isInteractive(target) || isInteractive(pointEl)) {
         edgeRef.current = null;
         swipeRef.current = null;
         return;

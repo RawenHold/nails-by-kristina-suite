@@ -24,6 +24,8 @@ export default function BottomSheet({ open, onClose, title, children, footer }: 
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-sm"
           onClick={onClose}
+          data-no-swipe-nav
+          data-bottom-sheet="open"
         >
           <motion.div
             initial={{ y: "100%" }}
@@ -31,6 +33,7 @@ export default function BottomSheet({ open, onClose, title, children, footer }: 
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
             onClick={(e) => e.stopPropagation()}
+            data-no-swipe-nav
             className="absolute bottom-0 inset-x-0 glass-sheet rounded-t-3xl flex flex-col max-h-[92vh]"
           >
             <div className="flex items-center justify-center pt-2.5 pb-1">
