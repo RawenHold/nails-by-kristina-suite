@@ -25,13 +25,26 @@ export default function AppLayout() {
 
   // Edge-swipe (open menu) + content-swipe (switch tab) gestures
   useEffect(() => {
+    const isInteractive = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      // Skip gestures inside any form input, editable area, scroller, modal/sheet, or explicitly opted-out region
+      return !!el.closest(
+        'input, textarea, select, button, [contenteditable="true"], [role="dialog"], [role="menu"], [data-no-swipe-nav], [data-radix-popper-content-wrapper], [data-state="open"]'
+      );
+    };
+
     const onTouchStart = (e: TouchEvent) => {
       if (open) return;
+      // Ignore multi-touch (pinch/zoom on photos)
+      if (e.touches.length > 1) {
+        edgeRef.current = null;
+        swipeRef.current = null;
+        return;
+      }
       const t = e.touches[0];
       if (!t) return;
-      // Ignore gestures starting on interactive horizontal scrollers/sliders
       const target = e.target as HTMLElement | null;
-      if (target?.closest("[data-no-swipe-nav]")) {
+      if (isInteractive(target)) {
         edgeRef.current = null;
         swipeRef.current = null;
         return;
