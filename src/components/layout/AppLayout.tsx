@@ -8,8 +8,8 @@ import { useTimeOfDay } from "@/hooks/useTimeOfDay";
 
 const EDGE_THRESHOLD = 24; // px from left edge to start menu gesture
 const OPEN_THRESHOLD = 60; // px horizontal travel to trigger menu
-const SWIPE_NAV_THRESHOLD = 80; // px horizontal travel to switch tab
-const SWIPE_VERTICAL_TOLERANCE = 1.4; // dx must dominate dy
+const SWIPE_NAV_THRESHOLD = 120; // px horizontal travel to switch tab (raised to avoid accidents)
+const SWIPE_VERTICAL_TOLERANCE = 2; // dx must clearly dominate dy
 
 // Tabs participating in horizontal swipe navigation (matches BottomNav order)
 const SWIPE_TABS = ["/", "/calendar", "/clients", "/gallery", "/timer", "/finances"];
