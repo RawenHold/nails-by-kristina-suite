@@ -308,6 +308,7 @@ export default function GalleryPage() {
       <AnimatePresence>
         {selectedPhoto && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            data-no-swipe-nav
             className="fixed inset-0 z-50 bg-background flex flex-col">
             <div className="flex items-center justify-between px-4 safe-top pb-2 pt-2">
               <div className="min-w-0 flex-1">
