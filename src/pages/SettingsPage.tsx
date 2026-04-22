@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -15,13 +15,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
 
-type ServiceFormState = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
-type CategoryFormState = { id?: string; name: string };
-type TemplateFormState = { id?: string; title: string; body: string };
+type ServiceInitial = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
+type CategoryInitial = { id?: string; name: string };
+type TemplateInitial = { id?: string; title: string; body: string };
 
-const emptyService: ServiceFormState = { name: "", default_price: "", duration_minutes: "60", category: "" };
-const emptyCategory: CategoryFormState = { name: "" };
-const emptyTemplate: TemplateFormState = { title: "", body: "" };
+const emptyService: ServiceInitial = { name: "", default_price: "", duration_minutes: "60", category: "" };
+const emptyCategory: CategoryInitial = { name: "" };
+const emptyTemplate: TemplateInitial = { title: "", body: "" };
+
+/**
+ * Helper: read input value safely on Android WebView.
+ * Forces the IME composition to commit by blurring the active element first.
+ * This prevents losing the last typed character / partial words when the user
+ * taps "Save" before the input loses focus naturally.
+ */
+function commitActiveInput() {
+  const el = document.activeElement as HTMLElement | null;
+  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+    el.blur();
+  }
+}
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -40,20 +53,38 @@ export default function SettingsPage() {
   const deleteTemplate = useDeleteMessageTemplate();
   const navigate = useNavigate();
 
-  const [serviceForm, setServiceForm] = useState<ServiceFormState | null>(null);
-  const [categoryForm, setCategoryForm] = useState<CategoryFormState | null>(null);
-  const [templateForm, setTemplateForm] = useState<TemplateFormState | null>(null);
+  // Store only the "is open + initial values + edit id". The actual current
+  // values live in the DOM via refs, which is bullet-proof against Android
+  // IME composition issues that drop characters with controlled inputs.
+  const [serviceForm, setServiceForm] = useState<ServiceInitial | null>(null);
+  const [categoryForm, setCategoryForm] = useState<CategoryInitial | null>(null);
+  const [templateForm, setTemplateForm] = useState<TemplateInitial | null>(null);
+
+  const serviceNameRef = useRef<HTMLInputElement>(null);
+  const servicePriceRef = useRef<HTMLInputElement>(null);
+  const serviceDurationRef = useRef<HTMLInputElement>(null);
+  const serviceCategoryRef = useRef<HTMLInputElement>(null);
+  const categoryNameRef = useRef<HTMLInputElement>(null);
+  const templateTitleRef = useRef<HTMLInputElement>(null);
+  const templateBodyRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   const submitService = async () => {
     if (!serviceForm) return;
-    if (!serviceForm.name.trim()) { toast.error("Укажите название"); return; }
+    commitActiveInput();
+    // Tiny delay to let the IME composition commit on Android
+    await new Promise((r) => setTimeout(r, 50));
+    const name = (serviceNameRef.current?.value ?? "").trim();
+    const priceRaw = (servicePriceRef.current?.value ?? "").trim();
+    const durationRaw = (serviceDurationRef.current?.value ?? "").trim();
+    const category = (serviceCategoryRef.current?.value ?? "").trim();
+    if (!name) { toast.error("Укажите название услуги"); return; }
     const payload = {
-      name: serviceForm.name.trim(),
-      default_price: parseInt(serviceForm.default_price) || 0,
-      duration_minutes: parseInt(serviceForm.duration_minutes) || 60,
-      category: serviceForm.category.trim() || null,
+      name,
+      default_price: parseInt(priceRaw) || 0,
+      duration_minutes: parseInt(durationRaw) || 60,
+      category: category || null,
     };
     if (serviceForm.id) {
       await updateService.mutateAsync({ id: serviceForm.id, ...payload });
@@ -65,22 +96,30 @@ export default function SettingsPage() {
 
   const submitCategory = async () => {
     if (!categoryForm) return;
-    if (!categoryForm.name.trim()) { toast.error("Укажите название"); return; }
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 50));
+    const name = (categoryNameRef.current?.value ?? "").trim();
+    if (!name) { toast.error("Укажите название категории"); return; }
     if (categoryForm.id) {
-      await updateCategory.mutateAsync({ id: categoryForm.id, name: categoryForm.name.trim() });
+      await updateCategory.mutateAsync({ id: categoryForm.id, name });
     } else {
-      await createCategory.mutateAsync(categoryForm.name.trim());
+      await createCategory.mutateAsync(name);
     }
     setCategoryForm(null);
   };
 
   const submitTemplate = async () => {
     if (!templateForm) return;
-    if (!templateForm.title.trim() || !templateForm.body.trim()) { toast.error("Заполните все поля"); return; }
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 50));
+    const title = (templateTitleRef.current?.value ?? "").trim();
+    const body = (templateBodyRef.current?.value ?? "").trim();
+    if (!title) { toast.error("Укажите название шаблона"); return; }
+    if (!body) { toast.error("Введите текст сообщения"); return; }
     if (templateForm.id) {
-      await updateTemplate.mutateAsync({ id: templateForm.id, title: templateForm.title.trim(), body: templateForm.body });
+      await updateTemplate.mutateAsync({ id: templateForm.id, title, body });
     } else {
-      await createTemplate.mutateAsync({ title: templateForm.title.trim(), body: templateForm.body });
+      await createTemplate.mutateAsync({ title, body });
     }
     setTemplateForm(null);
   };
@@ -205,24 +244,60 @@ export default function SettingsPage() {
         {serviceForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setServiceForm(null)}>
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
+              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-display font-semibold text-foreground">{serviceForm.id ? "Редактировать услугу" : "Новая услуга"}</h2>
                 <button onClick={() => setServiceForm(null)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-3">
-                <input value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Название услуги" />
+                <input
+                  ref={serviceNameRef}
+                  defaultValue={serviceForm.name}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck={false}
+                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Название услуги"
+                />
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="number" value={serviceForm.default_price} onChange={(e) => setServiceForm({ ...serviceForm, default_price: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Цена (сум)" />
-                  <input type="number" value={serviceForm.duration_minutes} onChange={(e) => setServiceForm({ ...serviceForm, duration_minutes: e.target.value })}
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Минут" />
+                  <input
+                    ref={servicePriceRef}
+                    type="number"
+                    inputMode="numeric"
+                    defaultValue={serviceForm.default_price}
+                    autoComplete="off"
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
+                    placeholder="Цена (сум)"
+                  />
+                  <input
+                    ref={serviceDurationRef}
+                    type="number"
+                    inputMode="numeric"
+                    defaultValue={serviceForm.duration_minutes}
+                    autoComplete="off"
+                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
+                    placeholder="Минут"
+                  />
                 </div>
-                <input value={serviceForm.category} onChange={(e) => setServiceForm({ ...serviceForm, category: e.target.value })}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Категория (необязательно)" />
-                <motion.button whileTap={{ scale: 0.97 }} onClick={submitService} disabled={createService.isPending || updateService.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
+                <input
+                  ref={serviceCategoryRef}
+                  defaultValue={serviceForm.category}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck={false}
+                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
+                  placeholder="Категория (необязательно)"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onPointerDown={commitActiveInput}
+                  onClick={submitService}
+                  disabled={createService.isPending || updateService.isPending}
+                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
+                >
                   {createService.isPending || updateService.isPending ? "Сохранение..." : serviceForm.id ? "Сохранить" : "Добавить услугу"}
                 </motion.button>
               </div>
@@ -236,12 +311,28 @@ export default function SettingsPage() {
         {categoryForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setCategoryForm(null)}>
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
+              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">{categoryForm.id ? "Редактировать категорию" : "Новая категория"}</h2>
-              <input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 mb-3" placeholder="Название категории" />
-              <motion.button whileTap={{ scale: 0.97 }} onClick={submitCategory} disabled={createCategory.isPending || updateCategory.isPending}
-                className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">{categoryForm.id ? "Сохранить" : "Добавить"}</motion.button>
+              <input
+                ref={categoryNameRef}
+                defaultValue={categoryForm.name}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
+                className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 mb-3"
+                placeholder="Название категории"
+              />
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onPointerDown={commitActiveInput}
+                onClick={submitCategory}
+                disabled={createCategory.isPending || updateCategory.isPending}
+                className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
+              >
+                {categoryForm.id ? "Сохранить" : "Добавить"}
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
@@ -252,15 +343,40 @@ export default function SettingsPage() {
         {templateForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setTemplateForm(null)}>
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
+              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">{templateForm.id ? "Редактировать шаблон" : "Новый шаблон"}</h2>
               <div className="space-y-3">
-                <input value={templateForm.title} onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Название шаблона" />
-                <textarea value={templateForm.body} onChange={(e) => setTemplateForm({ ...templateForm, body: e.target.value })} rows={4}
-                  className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Текст сообщения..." />
-                <motion.button whileTap={{ scale: 0.97 }} onClick={submitTemplate} disabled={createTemplate.isPending || updateTemplate.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">{templateForm.id ? "Сохранить" : "Добавить шаблон"}</motion.button>
+                <input
+                  ref={templateTitleRef}
+                  defaultValue={templateForm.title}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck={false}
+                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Название шаблона"
+                />
+                <textarea
+                  ref={templateBodyRef}
+                  defaultValue={templateForm.body}
+                  rows={4}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck={false}
+                  className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  placeholder="Текст сообщения..."
+                />
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onPointerDown={commitActiveInput}
+                  onClick={submitTemplate}
+                  disabled={createTemplate.isPending || updateTemplate.isPending}
+                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
+                >
+                  {templateForm.id ? "Сохранить" : "Добавить шаблон"}
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
