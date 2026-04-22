@@ -137,7 +137,7 @@ export default function FinancesPage() {
   };
 
   const allTransactions = [
-    ...(tab !== "Расходы" ? (incomes || []).map(i => ({ raw: i as Income | Expense, id: i.id, amount: i.amount, type: "income" as const, date: i.received_at, desc: i.appointment_id ? "Оплата" : (i.note || "Оплата"), category: i.clients?.full_name || (i.note && i.appointment_id ? i.note : "Клиент"), linked: !!i.appointment_id })) : []),
+    ...(tab !== "Расходы" ? (incomes || []).map(i => ({ raw: i as Income | Expense, id: i.id, amount: i.amount, type: "income" as const, date: i.received_at, desc: i.clients?.full_name || "Доход", category: i.note || (i.appointment_id ? "Оплата за услугу" : "Без заметки"), linked: !!i.appointment_id })) : []),
     ...(tab !== "Доходы" ? (expenses || []).map(e => ({ raw: e as Income | Expense, id: e.id, amount: e.amount, type: "expense" as const, date: e.spent_at, desc: e.note || "Расход", category: e.expense_categories?.name || "Другое", linked: false })) : []),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
