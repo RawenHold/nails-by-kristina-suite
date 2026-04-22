@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { getAuthRedirectUrl, initDeepLinkAuth } from "@/lib/deepLinkAuth";
+import { getAuthRedirectUrl, getPasswordResetRedirectUrl, initDeepLinkAuth } from "@/lib/deepLinkAuth";
 
 interface AuthContextType {
   session: Session | null;
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const sendPasswordReset = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirectUrl(),
     });
     if (error) throw error;
   };
