@@ -38,16 +38,12 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { data: services } = useServices();
   const { data: categories } = useExpenseCategories();
-  const { data: templates } = useMessageTemplates();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
   const createCategory = useCreateExpenseCategory();
   const updateCategory = useUpdateExpenseCategory();
   const deleteCategory = useDeleteExpenseCategory();
-  const createTemplate = useCreateMessageTemplate();
-  const updateTemplate = useUpdateMessageTemplate();
-  const deleteTemplate = useDeleteMessageTemplate();
   const navigate = useNavigate();
 
   // Store only the "is open + initial values + edit id". The actual current
@@ -55,15 +51,19 @@ export default function SettingsPage() {
   // IME composition issues that drop characters with controlled inputs.
   const [serviceForm, setServiceForm] = useState<ServiceInitial | null>(null);
   const [categoryForm, setCategoryForm] = useState<CategoryInitial | null>(null);
-  const [templateForm, setTemplateForm] = useState<TemplateInitial | null>(null);
 
   const serviceNameRef = useRef<HTMLInputElement>(null);
   const servicePriceRef = useRef<HTMLInputElement>(null);
   const serviceDurationRef = useRef<HTMLInputElement>(null);
   const serviceCategoryRef = useRef<HTMLInputElement>(null);
   const categoryNameRef = useRef<HTMLInputElement>(null);
-  const templateTitleRef = useRef<HTMLInputElement>(null);
-  const templateBodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // IME-safe latest-value capture: onInput fires for every keystroke including
+  // IME composition updates, so even if the user types a space and a new word
+  // ("Гель лак") and taps Save before composition end, we still have the full value.
+  const serviceNameLatest = useRef<string>("");
+  const serviceCategoryLatest = useRef<string>("");
+  const categoryNameLatest = useRef<string>("");
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
