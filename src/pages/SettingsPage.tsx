@@ -105,21 +105,7 @@ export default function SettingsPage() {
     setCategoryForm(null);
   };
 
-  const submitTemplate = async () => {
-    if (!templateForm) return;
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 50));
-    const title = (templateTitleRef.current?.value ?? "").trim();
-    const body = (templateBodyRef.current?.value ?? "").trim();
-    if (!title) { toast.error("Укажите название шаблона"); return; }
-    if (!body) { toast.error("Введите текст сообщения"); return; }
-    if (templateForm.id) {
-      await updateTemplate.mutateAsync({ id: templateForm.id, title, body });
-    } else {
-      await createTemplate.mutateAsync({ title, body });
-    }
-    setTemplateForm(null);
-  };
+  const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
 
   const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
 
