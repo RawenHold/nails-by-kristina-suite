@@ -203,6 +203,49 @@ export default function TimerPage() {
     setConfirmTarget(null);
   };
 
+  // datetime-local helpers (preserve local timezone for the input)
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEdit = (s: typeof sessions[number]) => {
+    setEditingId(s.id);
+    setEditClientId(s.client_id ?? "");
+    setEditStartedAt(toLocalInput(s.started_at));
+    setEditEndedAt(s.ended_at ? toLocalInput(s.ended_at) : toLocalInput(s.started_at));
+    editNote.reset(s.note ?? "");
+  };
+
+  const closeEdit = () => {
+    setEditingId(null);
+    editNote.reset("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    const startMs = new Date(editStartedAt).getTime();
+    const endMs = new Date(editEndedAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      return;
+    }
+    if (endMs < startMs) {
+      // swap if user inverted
+      return;
+    }
+    const duration = Math.max(0, Math.floor((endMs - startMs) / 1000));
+    await updateSession.mutateAsync({
+      id: editingId,
+      client_id: editClientId || null,
+      started_at: new Date(startMs).toISOString(),
+      ended_at: new Date(endMs).toISOString(),
+      duration_seconds: duration,
+      note: editNote.read() || null,
+    });
+    closeEdit();
+  };
+
   return (
     <div className="min-h-screen">
       <PageHeader title="Таймер" subtitle="Отслеживание времени" />
