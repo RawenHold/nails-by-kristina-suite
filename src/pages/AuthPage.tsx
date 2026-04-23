@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import logo from "@/assets/logo-wide.svg";
+import logo from "@/assets/logo-wide.png";
 
 type Mode = "login" | "signup" | "forgot";
 

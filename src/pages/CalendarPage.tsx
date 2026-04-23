@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
@@ -44,7 +45,16 @@ const emptyForm = {
 };
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const location = useLocation();
+  const initialDate = (() => {
+    const fromState = (location.state as { date?: string } | null)?.date;
+    if (fromState) {
+      const d = new Date(fromState);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  })();
+  const [currentDate, setCurrentDate] = useState(initialDate);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [viewing, setViewing] = useState<Appointment | null>(null);
@@ -52,6 +62,46 @@ export default function CalendarPage() {
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as PaymentMethod, note: "" });
   const [form, setForm] = useState(emptyForm);
+
+  // React to subsequent navigations to /calendar with a different state.date
+  useEffect(() => {
+    const fromState = (location.state as { date?: string } | null)?.date;
+    if (fromState) {
+      const d = new Date(fromState);
+      if (!isNaN(d.getTime())) setCurrentDate(d);
+    }
+  }, [location.state]);
+
+  // IME-safe note refs (Android: keep notes in DOM so other field re-renders don't wipe composition)
+  const apptNotesRef = useRef<HTMLInputElement>(null);
+  const apptNotesLatest = useRef<string>("");
+  const completeNoteRef = useRef<HTMLInputElement>(null);
+  const completeNoteLatest = useRef<string>("");
+
+  const commitActiveInput = () => {
+    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+  };
+  const readBest = (refVal: string | undefined, latest: string) => {
+    const dom = (refVal ?? "");
+    const lat = (latest ?? "");
+    return dom.length >= lat.length ? dom : lat;
+  };
+
+  // Sync DOM value when opening the form
+  useEffect(() => {
+    if (showForm) {
+      apptNotesLatest.current = form.notes;
+      if (apptNotesRef.current) apptNotesRef.current.value = form.notes;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm]);
+  useEffect(() => {
+    if (completeTarget) {
+      completeNoteLatest.current = "";
+      if (completeNoteRef.current) completeNoteRef.current.value = "";
+    }
+  }, [completeTarget]);
 
   const { data: appointments, isLoading } = useAppointments(currentDate);
   const { data: clients } = useClients();
@@ -87,6 +137,9 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
+    const notes = readBest(apptNotesRef.current?.value, apptNotesLatest.current);
     const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
     const endTime = new Date(form.date);
@@ -109,7 +162,7 @@ export default function CalendarPage() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         expected_price: expectedPrice,
-        notes: form.notes || null,
+        notes: notes || null,
         service_ids: form.selectedServices.map(s => ({ id: s.id, price: s.price })),
         ...(payment ? { payment } : {}),
       });
@@ -119,7 +172,7 @@ export default function CalendarPage() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         expected_price: expectedPrice,
-        notes: form.notes || undefined,
+        notes: notes || undefined,
         service_ids: form.selectedServices.map(s => ({ id: s.id, price: s.price })),
       });
     }
@@ -143,13 +196,16 @@ export default function CalendarPage() {
 
   const handleComplete = async () => {
     if (!completeTarget) return;
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(paymentForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readBest(completeNoteRef.current?.value, completeNoteLatest.current);
     await completeAppointment.mutateAsync({
       appointment_id: completeTarget.id,
       paid_amount: amount,
       payment_method: paymentForm.method,
-      note: paymentForm.note || undefined,
+      note: note || undefined,
     });
     setCompleteTarget(null);
   };
@@ -338,7 +394,18 @@ export default function CalendarPage() {
           )}
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметки</label>
-            <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input-glass" placeholder="Дополнительно..." />
+            <input
+              ref={apptNotesRef}
+              defaultValue={form.notes}
+              onInput={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
+              className="input-glass"
+              placeholder="Дополнительно..."
+            />
           </div>
         </div>
       </BottomSheet>
@@ -384,8 +451,18 @@ export default function CalendarPage() {
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-              <input value={paymentForm.note} onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
-                className="input-glass" placeholder="Например: чаевые, комментарий..." />
+              <input
+                ref={completeNoteRef}
+                defaultValue=""
+                onInput={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+                onCompositionEnd={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
+                className="input-glass"
+                placeholder="Например: чаевые, комментарий..."
+              />
             </div>
           </div>
         )}

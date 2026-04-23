@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -43,7 +43,9 @@ export default function ClientProfilePage() {
   const [tab, setTab] = useState("Обзор");
   const [showReminder, setShowReminder] = useState(false);
   const [reminderDate, setReminderDate] = useState("");
-  const [reminderNote, setReminderNote] = useState("");
+  // IME-safe: keep reminder note in DOM ref so date changes don't wipe composition
+  const reminderNoteRef = useRef<HTMLInputElement>(null);
+  const reminderNoteLatest = useRef<string>("");
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [visitDetails, setVisitDetails] = useState<VisitItem | null>(null);
@@ -97,11 +99,19 @@ export default function ClientProfilePage() {
   const c = client;
 
   const handleCreateReminder = async () => {
+    // commit IME composition before reading
+    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+    await new Promise((r) => setTimeout(r, 80));
     if (!reminderDate) { toast.error("Выберите дату"); return; }
-    await createReminder.mutateAsync({ client_id: c.id, reminder_date: reminderDate, notes: reminderNote || null });
+    const dom = (reminderNoteRef.current?.value ?? "");
+    const lat = reminderNoteLatest.current ?? "";
+    const note = (dom.length >= lat.length ? dom : lat).trim();
+    await createReminder.mutateAsync({ client_id: c.id, reminder_date: reminderDate, notes: note || null });
     setShowReminder(false);
     setReminderDate("");
-    setReminderNote("");
+    reminderNoteLatest.current = "";
+    if (reminderNoteRef.current) reminderNoteRef.current.value = "";
   };
 
   const handleSaveEdit = async () => {
@@ -305,8 +315,18 @@ export default function ClientProfilePage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметка</label>
-            <input value={reminderNote} onChange={(e) => setReminderNote(e.target.value)}
-              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Записать на маникюр..." />
+            <input
+              ref={reminderNoteRef}
+              defaultValue=""
+              onInput={(e) => { reminderNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { reminderNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Записать на маникюр..."
+            />
           </div>
         </div>
       </BottomSheet>

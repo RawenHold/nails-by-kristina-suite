@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, ExternalLink } from "lucide-react";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/logo.png";
 import { APP_URL_SCHEME, consumeAuthCallbackUrl } from "@/lib/deepLinkAuth";
 
 type CallbackState = "finishing" | "recovery_ready" | "success" | "error";

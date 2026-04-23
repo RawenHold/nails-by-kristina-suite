@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import logo from "@/assets/logo-wide.svg";
+import logo from "@/assets/logo-wide.png";
 
 type Stage = "verifying" | "ready" | "expired";
 
