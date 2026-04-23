@@ -24,6 +24,11 @@ export default function TimerPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmTarget, setConfirmTarget] = useState<"selected" | "all" | string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editClientId, setEditClientId] = useState("");
+  const [editStartedAt, setEditStartedAt] = useState("");
+  const [editEndedAt, setEditEndedAt] = useState("");
+  const editNote = useImeSafeInput<HTMLInputElement>("");
   const note = useImeSafeInput<HTMLInputElement>("");
   const startedAtRef = useRef<string>("");
   const runStartedAtMsRef = useRef<number | null>(null);
@@ -33,6 +38,7 @@ export default function TimerPage() {
   const { data: clients } = useClients();
   const { data: sessions } = useTimerSessions();
   const saveSession = useSaveTimerSession();
+  const updateSession = useUpdateTimerSession();
   const deleteSessions = useDeleteTimerSessions();
 
   const persistTimer = () => {
