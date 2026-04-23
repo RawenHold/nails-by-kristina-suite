@@ -107,8 +107,6 @@ export default function SettingsPage() {
 
   const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
 
-  const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
-
   const themes = [
     { value: "light" as const, icon: Sun, label: "Светлая" },
     { value: "dark" as const, icon: Moon, label: "Тёмная" },
