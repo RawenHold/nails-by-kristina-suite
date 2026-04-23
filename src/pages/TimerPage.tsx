@@ -275,8 +275,19 @@ export default function TimerPage() {
             {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
           </select>
           <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 mt-3 block uppercase tracking-wide">Заметка</label>
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Что делали..."
-            className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input
+            ref={note.ref}
+            defaultValue={note.initial}
+            onInput={note.onInput}
+            onCompositionEnd={note.onCompositionEnd}
+            lang="ru"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            spellCheck={false}
+            placeholder="Что делали..."
+            className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
         </GlassCard>
 
         {/* Session History */}
