@@ -78,15 +78,7 @@ export default function CalendarPage() {
   const completeNoteRef = useRef<HTMLInputElement>(null);
   const completeNoteLatest = useRef<string>("");
 
-  const commitActiveInput = () => {
-    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
-    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
-  };
-  const readBest = (refVal: string | undefined, latest: string) => {
-    const dom = (refVal ?? "");
-    const lat = (latest ?? "");
-    return dom.length >= lat.length ? dom : lat;
-  };
+  const readBest = (refVal: string | undefined, latest: string) => latest ?? refVal ?? "";
 
   // Sync DOM value when opening the form
   useEffect(() => {
@@ -137,8 +129,6 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 80));
     const notes = readBest(apptNotesRef.current?.value, apptNotesLatest.current);
     const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
@@ -196,8 +186,6 @@ export default function CalendarPage() {
 
   const handleComplete = async () => {
     if (!completeTarget) return;
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(paymentForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     const note = readBest(completeNoteRef.current?.value, completeNoteLatest.current);

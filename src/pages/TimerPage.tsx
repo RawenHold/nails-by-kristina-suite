@@ -9,20 +9,24 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/useClients";
 import { useTimerSessions, useSaveTimerSession, useDeleteTimerSessions } from "@/hooks/useTimerSessions";
+import { useImeSafeInput } from "@/hooks/useImeSafeInput";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 type TimerState = "idle" | "running" | "paused";
+const TIMER_STORAGE_KEY = "knails-timer-draft";
 
 export default function TimerPage() {
   const [state, setState] = useState<TimerState>("idle");
   const [elapsed, setElapsed] = useState(0);
   const [clientId, setClientId] = useState("");
-  const [note, setNote] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmTarget, setConfirmTarget] = useState<"selected" | "all" | string | null>(null);
+  const note = useImeSafeInput<HTMLInputElement>("");
   const startedAtRef = useRef<string>("");
+  const runStartedAtMsRef = useRef<number | null>(null);
+  const pausedElapsedRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: clients } = useClients();
@@ -30,14 +34,75 @@ export default function TimerPage() {
   const saveSession = useSaveTimerSession();
   const deleteSessions = useDeleteTimerSessions();
 
+  const persistTimer = () => {
+    const payload = {
+      state,
+      elapsed,
+      clientId,
+      note: note.read(),
+      startedAt: startedAtRef.current,
+      runStartedAtMs: runStartedAtMsRef.current,
+      pausedElapsed: pausedElapsedRef.current,
+    };
+    if (payload.state === "idle" && !payload.elapsed && !payload.clientId && !payload.note) {
+      localStorage.removeItem(TIMER_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(payload));
+  };
+
+  useEffect(() => {
+    const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw);
+      startedAtRef.current = saved.startedAt ?? "";
+      runStartedAtMsRef.current = saved.runStartedAtMs ?? null;
+      pausedElapsedRef.current = saved.pausedElapsed ?? saved.elapsed ?? 0;
+      setClientId(saved.clientId ?? "");
+      note.reset(saved.note ?? "");
+      if (saved.state === "running" && saved.runStartedAtMs) {
+        setElapsed(pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - saved.runStartedAtMs) / 1000)));
+        setState("running");
+      } else {
+        setElapsed(saved.elapsed ?? pausedElapsedRef.current ?? 0);
+        setState(saved.state ?? "idle");
+      }
+    } catch {
+      localStorage.removeItem(TIMER_STORAGE_KEY);
+    }
+  }, []);
+
   useEffect(() => {
     if (state === "running") {
-      intervalRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
+      const tick = () => {
+        const runStartedAt = runStartedAtMsRef.current ?? Date.now();
+        setElapsed(pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - runStartedAt) / 1000)));
+      };
+      tick();
+      intervalRef.current = setInterval(tick, 1000);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [state]);
+
+  useEffect(() => { persistTimer(); }, [state, elapsed, clientId]);
+
+  useEffect(() => {
+    const sync = () => {
+      if (document.visibilityState === "visible" && state === "running" && runStartedAtMsRef.current) {
+        setElapsed(pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - runStartedAtMsRef.current) / 1000)));
+      }
+      persistTimer();
+    };
+    window.addEventListener("beforeunload", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      window.removeEventListener("beforeunload", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [state, elapsed, clientId]);
 
   const formatTime = (sec: number) => {
     const h = Math.floor(sec / 3600);
@@ -47,25 +112,57 @@ export default function TimerPage() {
   };
 
   const handleStart = () => {
-    startedAtRef.current = new Date().toISOString();
+    const now = new Date();
+    startedAtRef.current = now.toISOString();
+    runStartedAtMsRef.current = now.getTime();
+    pausedElapsedRef.current = 0;
+    setElapsed(0);
     setState("running");
   };
-  const handlePause = () => setState("paused");
-  const handleResume = () => setState("running");
-  const handleReset = () => { setState("idle"); setElapsed(0); };
-  const handleStop = async () => {
+  const handlePause = () => {
+    if (runStartedAtMsRef.current) {
+      const nextElapsed = pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - runStartedAtMsRef.current) / 1000));
+      pausedElapsedRef.current = nextElapsed;
+      runStartedAtMsRef.current = null;
+      setElapsed(nextElapsed);
+    }
+    setState("paused");
+  };
+  const handleResume = () => {
+    runStartedAtMsRef.current = Date.now();
+    setState("running");
+  };
+  const handleReset = () => {
     setState("idle");
-    if (elapsed > 0) {
+    setElapsed(0);
+    setClientId("");
+    startedAtRef.current = "";
+    runStartedAtMsRef.current = null;
+    pausedElapsedRef.current = 0;
+    note.reset("");
+    localStorage.removeItem(TIMER_STORAGE_KEY);
+  };
+  const handleStop = async () => {
+    const finalElapsed = runStartedAtMsRef.current
+      ? pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - runStartedAtMsRef.current) / 1000))
+      : elapsed;
+    setState("idle");
+    if (finalElapsed > 0) {
       await saveSession.mutateAsync({
         client_id: clientId || null,
         started_at: startedAtRef.current,
         ended_at: new Date().toISOString(),
-        duration_seconds: elapsed,
-        note: note || undefined,
+        duration_seconds: finalElapsed,
+        note: note.read() || undefined,
       });
     }
     setElapsed(0);
-    setNote("");
+    setClientId("");
+    startedAtRef.current = "";
+    runStartedAtMsRef.current = null;
+    pausedElapsedRef.current = 0;
+    note.reset("");
+    localStorage.removeItem(TIMER_STORAGE_KEY);
   };
 
   const formatDuration = (sec: number) => {
