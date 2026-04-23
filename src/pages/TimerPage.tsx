@@ -3,12 +3,13 @@ import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import BottomSheet from "@/components/ui/BottomSheet";
 import StopwatchDial from "@/components/timer/StopwatchDial";
-import { Timer, Clock, Trash2, CheckSquare, Square as SquareIcon } from "lucide-react";
+import { Timer, Clock, Trash2, CheckSquare, Square as SquareIcon, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/useClients";
-import { useTimerSessions, useSaveTimerSession, useDeleteTimerSessions } from "@/hooks/useTimerSessions";
+import { useTimerSessions, useSaveTimerSession, useDeleteTimerSessions, useUpdateTimerSession } from "@/hooks/useTimerSessions";
 import { useImeSafeInput } from "@/hooks/useImeSafeInput";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -23,6 +24,11 @@ export default function TimerPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmTarget, setConfirmTarget] = useState<"selected" | "all" | string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editClientId, setEditClientId] = useState("");
+  const [editStartedAt, setEditStartedAt] = useState("");
+  const [editEndedAt, setEditEndedAt] = useState("");
+  const editNote = useImeSafeInput<HTMLInputElement>("");
   const note = useImeSafeInput<HTMLInputElement>("");
   const startedAtRef = useRef<string>("");
   const runStartedAtMsRef = useRef<number | null>(null);
@@ -32,6 +38,7 @@ export default function TimerPage() {
   const { data: clients } = useClients();
   const { data: sessions } = useTimerSessions();
   const saveSession = useSaveTimerSession();
+  const updateSession = useUpdateTimerSession();
   const deleteSessions = useDeleteTimerSessions();
 
   const persistTimer = () => {
@@ -196,6 +203,49 @@ export default function TimerPage() {
     setConfirmTarget(null);
   };
 
+  // datetime-local helpers (preserve local timezone for the input)
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEdit = (s: typeof sessions[number]) => {
+    setEditingId(s.id);
+    setEditClientId(s.client_id ?? "");
+    setEditStartedAt(toLocalInput(s.started_at));
+    setEditEndedAt(s.ended_at ? toLocalInput(s.ended_at) : toLocalInput(s.started_at));
+    editNote.reset(s.note ?? "");
+  };
+
+  const closeEdit = () => {
+    setEditingId(null);
+    editNote.reset("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    const startMs = new Date(editStartedAt).getTime();
+    const endMs = new Date(editEndedAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      return;
+    }
+    if (endMs < startMs) {
+      // swap if user inverted
+      return;
+    }
+    const duration = Math.max(0, Math.floor((endMs - startMs) / 1000));
+    await updateSession.mutateAsync({
+      id: editingId,
+      client_id: editClientId || null,
+      started_at: new Date(startMs).toISOString(),
+      ended_at: new Date(endMs).toISOString(),
+      duration_seconds: duration,
+      note: editNote.read() || null,
+    });
+    closeEdit();
+  };
+
   return (
     <div className="min-h-screen">
       <PageHeader title="Таймер" subtitle="Отслеживание времени" />
@@ -329,12 +379,14 @@ export default function TimerPage() {
             <div className="space-y-1.5">
               {sessions.map((s) => {
                 const isSelected = selected.has(s.id);
+                const startedDate = new Date(s.started_at);
+                const endedDate = s.ended_at ? new Date(s.ended_at) : null;
                 return (
                   <GlassCard
                     key={s.id}
-                    onClick={selectMode ? () => toggleSelect(s.id) : undefined}
+                    onClick={selectMode ? () => toggleSelect(s.id) : () => openEdit(s)}
                     className={cn(
-                      "flex items-center gap-3 py-3 transition-all",
+                      "flex items-center gap-3 py-3 transition-all cursor-pointer",
                       selectMode && isSelected && "ring-2 ring-primary/40"
                     )}
                   >
@@ -350,23 +402,43 @@ export default function TimerPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-foreground">{s.clients?.full_name || "Без клиентки"}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-muted-foreground">{formatDuration(s.duration_seconds)}</span>
-                        <span className="text-[11px] text-muted-foreground">•</span>
-                        <span className="text-[11px] text-muted-foreground">{format(new Date(s.started_at), "d MMM, HH:mm", { locale: ru })}</span>
+                      <span className="text-sm font-medium text-foreground truncate block">{s.clients?.full_name || "Без клиентки"}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span>{format(startedDate, "d MMM", { locale: ru })}</span>
+                        <span>•</span>
+                        <span className="tabular-nums">{format(startedDate, "HH:mm")}</span>
+                        {endedDate && (
+                          <>
+                            <span>→</span>
+                            <span className="tabular-nums">{format(endedDate, "HH:mm")}</span>
+                          </>
+                        )}
                       </div>
-                      {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
+                      {s.note && <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">{s.note}</p>}
                     </div>
-                    {!selectMode && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmTarget(s.id); }}
-                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
-                        aria-label="Удалить"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                    )}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-sm font-bold text-success tabular-nums">
+                        {formatDuration(s.duration_seconds)}
+                      </span>
+                      {!selectMode && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEdit(s); }}
+                            className="w-7 h-7 rounded-lg bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                            aria-label="Редактировать"
+                          >
+                            <Pencil className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmTarget(s.id); }}
+                            className="w-7 h-7 rounded-lg bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                            aria-label="Удалить"
+                          >
+                            <Trash2 className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </GlassCard>
                 );
               })}
@@ -374,6 +446,63 @@ export default function TimerPage() {
           )}
         </div>
       </div>
+
+      <BottomSheet open={!!editingId} onClose={closeEdit} title="Редактировать сессию"
+        footer={
+          <div className="flex gap-2">
+            <button onClick={closeEdit} className="flex-1 h-11 rounded-2xl bg-secondary/70 text-foreground text-sm font-medium active:bg-secondary">
+              Отмена
+            </button>
+            <button onClick={handleSaveEdit} className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold active:opacity-80">
+              Сохранить
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3 pb-4">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Клиентка</label>
+            <select value={editClientId} onChange={(e) => setEditClientId(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <option value="">Без привязки</option>
+              {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Начало</label>
+            <input type="datetime-local" value={editStartedAt} onChange={(e) => setEditStartedAt(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Окончание</label>
+            <input type="datetime-local" value={editEndedAt} onChange={(e) => setEditEndedAt(e.target.value)}
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Заметка</label>
+            <input
+              key={editingId ?? "edit-note"}
+              ref={editNote.ref}
+              defaultValue={editNote.initial}
+              onInput={editNote.onInput}
+              onCompositionEnd={editNote.onCompositionEnd}
+              lang="ru"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
+              placeholder="Что делали..."
+              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          {editStartedAt && editEndedAt && (() => {
+            const dur = Math.floor((new Date(editEndedAt).getTime() - new Date(editStartedAt).getTime()) / 1000);
+            if (!Number.isFinite(dur)) return null;
+            if (dur < 0) return <p className="text-[12px] text-destructive">Окончание раньше начала</p>;
+            return <p className="text-[12px] text-muted-foreground">Длительность: <span className="font-bold text-success">{formatDuration(dur)}</span></p>;
+          })()}
+        </div>
+      </BottomSheet>
 
       <ConfirmDialog
         open={!!confirmTarget}
