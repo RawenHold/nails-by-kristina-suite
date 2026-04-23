@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, format } from "date-fns";
 import { computeReminderStatus } from "./useReminders";
 
 export function useDashboardStats(period: string) {
@@ -20,10 +20,19 @@ export function useDashboardStats(period: string) {
       const e = end.toISOString();
       const todayStr = format(now, "yyyy-MM-dd");
 
+      const upcomingEnd = endOfDay(addDays(now, 30)).toISOString();
+
       const [incomesRes, expensesRes, appointmentsRes, clientsRes, remindersRes, completedRes] = await Promise.all([
         supabase.from("incomes").select("amount").gte("received_at", s).lte("received_at", e),
         supabase.from("expenses").select("amount").gte("spent_at", s).lte("spent_at", e),
-        supabase.from("appointments").select("id, start_time, end_time, expected_price, status, client_id, clients(full_name)").gte("start_time", startOfDay(now).toISOString()).lte("start_time", endOfDay(now).toISOString()).order("start_time"),
+        // Upcoming appointments: from start of today up to 30 days ahead, exclude canceled/no_show
+        supabase
+          .from("appointments")
+          .select("id, start_time, end_time, expected_price, status, client_id, clients(full_name, loyalty_level)")
+          .gte("start_time", startOfDay(now).toISOString())
+          .lte("start_time", upcomingEnd)
+          .not("status", "in", "(canceled,no_show)")
+          .order("start_time"),
         supabase.from("clients").select("id, full_name, total_spent, total_visits, lifecycle_status, loyalty_level, last_visit_date, days_since_last_visit").eq("is_archived", false).order("total_spent", { ascending: false }).limit(50),
         // Pull all non-sent reminders so we can recompute statuses client-side
         supabase.from("reminders").select("*, clients(id, full_name, phone)").neq("status", "sent").order("reminder_date"),
@@ -51,7 +60,9 @@ export function useDashboardStats(period: string) {
         totalIncome,
         totalExpenses,
         profit: totalIncome - totalExpenses,
+        // Kept for backward compat — same as upcomingAppointments now.
         appointmentsToday: appointments,
+        upcomingAppointments: appointments,
         topClients,
         totalClients: allClients.length,
         reminders,
