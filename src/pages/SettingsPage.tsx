@@ -180,33 +180,6 @@ export default function SettingsPage() {
           )}
         </GlassCard>
 
-        {/* Message Templates */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5 text-primary" /> Шаблоны сообщений</p>
-            <button onClick={() => setTemplateForm({ ...emptyTemplate })} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5 text-primary" /></button>
-          </div>
-          {templates?.length === 0 ? <p className="text-xs text-muted-foreground">Нет шаблонов</p> : (
-            <div className="space-y-1">
-              {templates?.map((t: MessageTemplate) => (
-                <div key={t.id} className="flex items-start gap-2 py-1.5">
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(t.body); toast.success("Текст скопирован"); }}
-                    className="flex-1 min-w-0 text-left active:opacity-70"
-                  >
-                    <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{t.body}</p>
-                  </button>
-                  <button onClick={() => setTemplateForm({ id: t.id, title: t.title, body: t.body })}
-                    className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center active:scale-90 shrink-0"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                  <button onClick={() => { if (confirmDelete(t.title)) deleteTemplate.mutate(t.id); }}
-                    className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90 shrink-0"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </GlassCard>
-
         {/* Backup & restore */}
         <BackupCard />
 
