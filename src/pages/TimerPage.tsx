@@ -379,12 +379,14 @@ export default function TimerPage() {
             <div className="space-y-1.5">
               {sessions.map((s) => {
                 const isSelected = selected.has(s.id);
+                const startedDate = new Date(s.started_at);
+                const endedDate = s.ended_at ? new Date(s.ended_at) : null;
                 return (
                   <GlassCard
                     key={s.id}
-                    onClick={selectMode ? () => toggleSelect(s.id) : undefined}
+                    onClick={selectMode ? () => toggleSelect(s.id) : () => openEdit(s)}
                     className={cn(
-                      "flex items-center gap-3 py-3 transition-all",
+                      "flex items-center gap-3 py-3 transition-all cursor-pointer",
                       selectMode && isSelected && "ring-2 ring-primary/40"
                     )}
                   >
@@ -400,30 +402,47 @@ export default function TimerPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-foreground">{s.clients?.full_name || "Без клиентки"}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-muted-foreground">{formatDuration(s.duration_seconds)}</span>
-                        <span className="text-[11px] text-muted-foreground">•</span>
-                        <span className="text-[11px] text-muted-foreground">{format(new Date(s.started_at), "d MMM, HH:mm", { locale: ru })}</span>
+                      <span className="text-sm font-medium text-foreground truncate block">{s.clients?.full_name || "Без клиентки"}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span>{format(startedDate, "d MMM", { locale: ru })}</span>
+                        <span>•</span>
+                        <span className="tabular-nums">{format(startedDate, "HH:mm")}</span>
+                        {endedDate && (
+                          <>
+                            <span>→</span>
+                            <span className="tabular-nums">{format(endedDate, "HH:mm")}</span>
+                          </>
+                        )}
                       </div>
-                      {s.note && <p className="text-[10px] text-muted-foreground truncate">{s.note}</p>}
+                      {s.note && <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">{s.note}</p>}
                     </div>
-                    {!selectMode && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmTarget(s.id); }}
-                        className="w-8 h-8 rounded-xl bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
-                        aria-label="Удалить"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                    )}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-sm font-bold text-success tabular-nums">
+                        {formatDuration(s.duration_seconds)}
+                      </span>
+                      {!selectMode && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEdit(s); }}
+                            className="w-7 h-7 rounded-lg bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                            aria-label="Редактировать"
+                          >
+                            <Pencil className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmTarget(s.id); }}
+                            className="w-7 h-7 rounded-lg bg-secondary/60 flex items-center justify-center active:scale-90 transition-transform"
+                            aria-label="Удалить"
+                          >
+                            <Trash2 className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </GlassCard>
                 );
               })}
             </div>
-          )}
-        </div>
-      </div>
 
       <ConfirmDialog
         open={!!confirmTarget}
