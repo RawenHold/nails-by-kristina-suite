@@ -38,6 +38,41 @@ export default function FinancesPage() {
   const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash" as PaymentMethod, note: "" });
   const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
 
+  // IME-safe note inputs: keep the note in uncontrolled refs so that re-renders
+  // triggered by other fields (amount/client/category) never wipe out an
+  // in-progress IME composition on Android.
+  const incomeNoteRef = useRef<HTMLInputElement>(null);
+  const expenseNoteRef = useRef<HTMLInputElement>(null);
+  const incomeNoteLatest = useRef<string>("");
+  const expenseNoteLatest = useRef<string>("");
+
+  // Keep the DOM input in sync when the form is opened for create/edit.
+  useEffect(() => {
+    if (showIncome) {
+      incomeNoteLatest.current = incomeForm.note;
+      if (incomeNoteRef.current) incomeNoteRef.current.value = incomeForm.note;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showIncome]);
+  useEffect(() => {
+    if (showExpense) {
+      expenseNoteLatest.current = expenseForm.note;
+      if (expenseNoteRef.current) expenseNoteRef.current.value = expenseForm.note;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showExpense]);
+
+  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => {
+    const dom = (ref.current?.value ?? "").trim();
+    const lat = (latest ?? "").trim();
+    return dom.length >= lat.length ? dom : lat;
+  };
+
+  const commitActiveInput = () => {
+    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+  };
+
   const { data: incomes, isLoading: loadingI } = useIncomes(month);
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
   const { data: categories } = useExpenseCategories();
