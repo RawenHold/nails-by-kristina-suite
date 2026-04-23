@@ -62,6 +62,8 @@ export default function SettingsPage() {
   // IME composition updates, so even if the user types a space and a new word
   // ("Гель лак") and taps Save before composition end, we still have the full value.
   const serviceNameLatest = useRef<string>("");
+  const servicePriceLatest = useRef<string>("");
+  const serviceDurationLatest = useRef<string>("60");
   const serviceCategoryLatest = useRef<string>("");
   const categoryNameLatest = useRef<string>("");
 
@@ -71,6 +73,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (serviceForm) {
       serviceNameLatest.current = serviceForm.name;
+      servicePriceLatest.current = serviceForm.default_price;
+      serviceDurationLatest.current = serviceForm.duration_minutes;
       serviceCategoryLatest.current = serviceForm.category;
     }
   }, [serviceForm]);
@@ -84,21 +88,14 @@ export default function SettingsPage() {
    *  - latest captured value via onInput (catches partial composition)
    * This prevents losing the tail of words like "Гель лак" → "Гель" on Android.
    */
-  const readBest = (refVal: string | undefined, latest: string) => {
-    const dom = (refVal ?? "").trim();
-    const lat = (latest ?? "").trim();
-    return dom.length >= lat.length ? dom : lat;
-  };
+  const readLatest = (refVal: string | undefined, latest: string) => (latest ?? refVal ?? "").trim();
 
   const submitService = async () => {
     if (!serviceForm) return;
-    commitActiveInput();
-    // Slightly longer delay to let Android IME flush composition end.
-    await new Promise((r) => setTimeout(r, 120));
-    const name = readBest(serviceNameRef.current?.value, serviceNameLatest.current);
-    const priceRaw = (servicePriceRef.current?.value ?? "").trim();
-    const durationRaw = (serviceDurationRef.current?.value ?? "").trim();
-    const category = readBest(serviceCategoryRef.current?.value, serviceCategoryLatest.current);
+    const name = readLatest(serviceNameRef.current?.value, serviceNameLatest.current);
+    const priceRaw = readLatest(servicePriceRef.current?.value, servicePriceLatest.current);
+    const durationRaw = readLatest(serviceDurationRef.current?.value, serviceDurationLatest.current);
+    const category = readLatest(serviceCategoryRef.current?.value, serviceCategoryLatest.current);
     if (!name) { toast.error("Укажите название услуги"); return; }
     const payload = {
       name,
@@ -116,9 +113,7 @@ export default function SettingsPage() {
 
   const submitCategory = async () => {
     if (!categoryForm) return;
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 120));
-    const name = readBest(categoryNameRef.current?.value, categoryNameLatest.current);
+    const name = readLatest(categoryNameRef.current?.value, categoryNameLatest.current);
     if (!name) { toast.error("Укажите название категории"); return; }
     if (categoryForm.id) {
       await updateCategory.mutateAsync({ id: categoryForm.id, name });
@@ -226,12 +221,13 @@ export default function SettingsPage() {
                 <h2 className="text-lg font-display font-semibold text-foreground">{serviceForm.id ? "Редактировать услугу" : "Новая услуга"}</h2>
                 <button onClick={() => setServiceForm(null)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
               </div>
-              <div className="space-y-3">
+              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submitService(); }}>
                 <input
                   ref={serviceNameRef}
                   defaultValue={serviceForm.name}
                   onInput={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
                   onCompositionEnd={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
+                  lang="ru"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -245,6 +241,7 @@ export default function SettingsPage() {
                     type="number"
                     inputMode="numeric"
                     defaultValue={serviceForm.default_price}
+                    onInput={(e) => { servicePriceLatest.current = (e.target as HTMLInputElement).value; }}
                     autoComplete="off"
                     className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
                     placeholder="Цена (сум)"
@@ -254,6 +251,7 @@ export default function SettingsPage() {
                     type="number"
                     inputMode="numeric"
                     defaultValue={serviceForm.duration_minutes}
+                    onInput={(e) => { serviceDurationLatest.current = (e.target as HTMLInputElement).value; }}
                     autoComplete="off"
                     className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
                     placeholder="Минут"
@@ -264,6 +262,7 @@ export default function SettingsPage() {
                   defaultValue={serviceForm.category}
                   onInput={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
                   onCompositionEnd={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
+                  lang="ru"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -273,15 +272,13 @@ export default function SettingsPage() {
                 />
                 <motion.button
                   whileTap={{ scale: 0.97 }}
-                  type="button"
-                  onPointerDown={commitActiveInput}
-                  onClick={submitService}
+                  type="submit"
                   disabled={createService.isPending || updateService.isPending}
                   className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
                 >
                   {createService.isPending || updateService.isPending ? "Сохранение..." : serviceForm.id ? "Сохранить" : "Добавить услугу"}
                 </motion.button>
-              </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
@@ -294,11 +291,13 @@ export default function SettingsPage() {
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">{categoryForm.id ? "Редактировать категорию" : "Новая категория"}</h2>
+              <form onSubmit={(e) => { e.preventDefault(); submitCategory(); }}>
               <input
                 ref={categoryNameRef}
                 defaultValue={categoryForm.name}
                 onInput={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
                 onCompositionEnd={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
+                lang="ru"
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="sentences"
@@ -308,14 +307,13 @@ export default function SettingsPage() {
               />
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                type="button"
-                onPointerDown={commitActiveInput}
-                onClick={submitCategory}
+                type="submit"
                 disabled={createCategory.isPending || updateCategory.isPending}
                 className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {categoryForm.id ? "Сохранить" : "Добавить"}
               </motion.button>
+              </form>
             </motion.div>
           </motion.div>
         )}
