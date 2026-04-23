@@ -221,18 +221,34 @@ export default function HomePage() {
           </div>
           {(stats?.topClients || []).length > 0 && (
             <div className="space-y-2">
-              {stats!.topClients.slice(0, 3).map((c, i: number) => (
-                <div key={c.id} className="flex items-center justify-between cursor-pointer active:opacity-70" onClick={() => navigate(`/clients/${c.id}`)}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-muted-foreground w-4">{i + 1}</span>
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-[10px] font-semibold text-primary">{c.full_name?.split(" ").map((n: string) => n[0]).join("")}</span>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Топ клиентов</p>
+              {stats!.topClients.slice(0, 5).map((c: any, i: number) => {
+                const isRegular = (c.total_visits ?? 0) >= 3;
+                const rankColors = ["text-amber-500", "text-slate-400", "text-amber-700", "text-muted-foreground", "text-muted-foreground"];
+                return (
+                  <div key={c.id} className="flex items-center justify-between cursor-pointer active:opacity-70" onClick={() => navigate(`/clients/${c.id}`)}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={cn("text-[11px] font-bold w-4 text-center", rankColors[i])}>{i + 1}</span>
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-semibold text-primary">{c.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-foreground truncate">{c.full_name}</span>
+                          {c.loyalty_level && <LoyaltyBadge level={c.loyalty_level} showLabel={false} />}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {c.total_visits ?? 0} {(c.total_visits ?? 0) === 1 ? "визит" : "визитов"} ·{" "}
+                          <span className={isRegular ? "text-success font-semibold" : "text-muted-foreground"}>
+                            {isRegular ? "постоянная" : "разовая"}
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs font-medium text-foreground">{c.full_name}</span>
+                    <span className="text-[11px] font-semibold text-foreground shrink-0 ml-2">{formatCurrency(c.total_spent)}</span>
                   </div>
-                  <span className="text-[11px] font-semibold text-muted-foreground">{formatCurrency(c.total_spent)} сум</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </GlassCard>
