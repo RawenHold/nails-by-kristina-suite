@@ -351,7 +351,15 @@ export default function FinancesPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-            <input value={incomeForm.note} onChange={(e) => setIncomeForm({ ...incomeForm, note: e.target.value })}
+            <input
+              ref={incomeNoteRef}
+              defaultValue={incomeForm.note}
+              onInput={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Маникюр + дизайн..." />
           </div>
         </div>
@@ -394,7 +402,15 @@ export default function FinancesPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-            <input value={expenseForm.note} onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+            <input
+              ref={expenseNoteRef}
+              defaultValue={expenseForm.note}
+              onInput={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Материалы, реклама..." />
           </div>
         </div>
