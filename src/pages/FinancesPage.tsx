@@ -313,6 +313,8 @@ export default function FinancesPage() {
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
+            type="button"
+            onPointerDown={commitActiveInput}
             onClick={handleSaveIncome}
             disabled={createIncome.isPending || updateIncomeMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
@@ -373,6 +375,8 @@ export default function FinancesPage() {
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
+            type="button"
+            onPointerDown={commitActiveInput}
             onClick={handleSaveExpense}
             disabled={createExpense.isPending || updateExpenseMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
