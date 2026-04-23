@@ -137,6 +137,9 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
+    const notes = readBest(apptNotesRef.current?.value, apptNotesLatest.current);
     const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
     const endTime = new Date(form.date);
