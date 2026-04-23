@@ -10,8 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { cn, formatMoney } from "@/lib/utils";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useUpdateReminderStatus } from "@/hooks/useReminders";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { format, differenceInCalendarDays, parseISO, isToday, isTomorrow, isThisWeek } from "date-fns";
 import { ru } from "date-fns/locale";
+import LoyaltyBadge from "@/components/ui/LoyaltyBadge";
 
 const periods = ["Сегодня", "Неделя", "Месяц"];
 const periodMap: Record<string, string> = { "Сегодня": "today", "Неделя": "week", "Месяц": "month" };
@@ -152,37 +153,53 @@ export default function HomePage() {
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-foreground">Расписание на сегодня</h2>
+            <h2 className="text-sm font-semibold text-foreground">Предстоящие записи</h2>
             <button onClick={() => navigate("/calendar")} className="text-[11px] text-primary font-semibold flex items-center gap-0.5 active:opacity-70">
               Все <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-          {(stats?.appointmentsToday?.length || 0) === 0 ? (
-            <EmptyState icon={CalendarDays} title="Нет записей" description="На сегодня расписание свободно" />
+          {(stats?.upcomingAppointments?.length || 0) === 0 ? (
+            <EmptyState icon={CalendarDays} title="Нет записей" description="На ближайшие 30 дней расписание свободно" />
           ) : (
             <div className="space-y-1.5">
-              {stats!.appointmentsToday.map((apt, i: number) => (
-                <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <GlassCard className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => navigate("/calendar")}>
-                    <div className="flex flex-col items-center min-w-[48px]">
-                      <span className="text-sm font-bold text-foreground">{format(new Date(apt.start_time), "HH:mm")}</span>
-                      <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5",
-                        apt.status === "completed" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                        : apt.status === "confirmed" ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                        : "bg-secondary text-muted-foreground"
-                      )}>
-                        {apt.status === "completed" ? "готово" : apt.status === "confirmed" ? "подтв." : "план"}
-                      </span>
-                    </div>
-                    <div className="w-px h-10 bg-border/60 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-foreground truncate block">{apt.clients?.full_name || "—"}</span>
-                      <p className="text-[11px] text-muted-foreground">{formatCurrency(apt.expected_price)} сум</p>
-                    </div>
-                    <Clock className="w-4 h-4 text-muted-foreground/40" />
-                  </GlassCard>
-                </motion.div>
-              ))}
+              {stats!.upcomingAppointments.map((apt: any, i: number) => {
+                const d = new Date(apt.start_time);
+                const dayLabel = isToday(d)
+                  ? "Сегодня"
+                  : isTomorrow(d)
+                    ? "Завтра"
+                    : isThisWeek(d, { weekStartsOn: 1 })
+                      ? format(d, "EEEE", { locale: ru })
+                      : format(d, "d MMM", { locale: ru });
+                return (
+                  <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                    <GlassCard className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => navigate("/calendar")}>
+                      <div className="flex flex-col items-center min-w-[56px]">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{dayLabel}</span>
+                        <span className="text-sm font-bold text-foreground mt-0.5">{format(d, "HH:mm")}</span>
+                        <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5",
+                          apt.status === "completed" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                          : apt.status === "confirmed" ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                          : "bg-secondary text-muted-foreground"
+                        )}>
+                          {apt.status === "completed" ? "готово" : apt.status === "confirmed" ? "подтв." : "план"}
+                        </span>
+                      </div>
+                      <div className="w-px h-12 bg-border/60 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-foreground truncate">{apt.clients?.full_name || "—"}</span>
+                          {apt.clients?.loyalty_level && <LoyaltyBadge level={apt.clients.loyalty_level} showLabel={false} />}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {format(d, "d MMMM, EEEE", { locale: ru })} · {formatCurrency(apt.expected_price)} сум
+                        </p>
+                      </div>
+                      <Clock className="w-4 h-4 text-muted-foreground/40" />
+                    </GlassCard>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -204,18 +221,34 @@ export default function HomePage() {
           </div>
           {(stats?.topClients || []).length > 0 && (
             <div className="space-y-2">
-              {stats!.topClients.slice(0, 3).map((c, i: number) => (
-                <div key={c.id} className="flex items-center justify-between cursor-pointer active:opacity-70" onClick={() => navigate(`/clients/${c.id}`)}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-muted-foreground w-4">{i + 1}</span>
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-[10px] font-semibold text-primary">{c.full_name?.split(" ").map((n: string) => n[0]).join("")}</span>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Топ клиентов</p>
+              {stats!.topClients.slice(0, 5).map((c: any, i: number) => {
+                const isRegular = (c.total_visits ?? 0) >= 3;
+                const rankColors = ["text-amber-500", "text-slate-400", "text-amber-700", "text-muted-foreground", "text-muted-foreground"];
+                return (
+                  <div key={c.id} className="flex items-center justify-between cursor-pointer active:opacity-70" onClick={() => navigate(`/clients/${c.id}`)}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={cn("text-[11px] font-bold w-4 text-center", rankColors[i])}>{i + 1}</span>
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-semibold text-primary">{c.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-foreground truncate">{c.full_name}</span>
+                          {c.loyalty_level && <LoyaltyBadge level={c.loyalty_level} showLabel={false} />}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {c.total_visits ?? 0} {(c.total_visits ?? 0) === 1 ? "визит" : "визитов"} ·{" "}
+                          <span className={isRegular ? "text-success font-semibold" : "text-muted-foreground"}>
+                            {isRegular ? "постоянная" : "разовая"}
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs font-medium text-foreground">{c.full_name}</span>
+                    <span className="text-[11px] font-semibold text-foreground shrink-0 ml-2">{formatCurrency(c.total_spent)}</span>
                   </div>
-                  <span className="text-[11px] font-semibold text-muted-foreground">{formatCurrency(c.total_spent)} сум</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </GlassCard>

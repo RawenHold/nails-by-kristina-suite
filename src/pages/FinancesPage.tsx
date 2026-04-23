@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
@@ -37,6 +37,41 @@ export default function FinancesPage() {
   const [details, setDetails] = useState<{ type: "income" | "expense"; data: Income | Expense } | null>(null);
   const [incomeForm, setIncomeForm] = useState({ amount: "", client_id: "", payment_method: "cash" as PaymentMethod, note: "" });
   const [expenseForm, setExpenseForm] = useState({ amount: "", category_id: "", note: "" });
+
+  // IME-safe note inputs: keep the note in uncontrolled refs so that re-renders
+  // triggered by other fields (amount/client/category) never wipe out an
+  // in-progress IME composition on Android.
+  const incomeNoteRef = useRef<HTMLInputElement>(null);
+  const expenseNoteRef = useRef<HTMLInputElement>(null);
+  const incomeNoteLatest = useRef<string>("");
+  const expenseNoteLatest = useRef<string>("");
+
+  // Keep the DOM input in sync when the form is opened for create/edit.
+  useEffect(() => {
+    if (showIncome) {
+      incomeNoteLatest.current = incomeForm.note;
+      if (incomeNoteRef.current) incomeNoteRef.current.value = incomeForm.note;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showIncome]);
+  useEffect(() => {
+    if (showExpense) {
+      expenseNoteLatest.current = expenseForm.note;
+      if (expenseNoteRef.current) expenseNoteRef.current.value = expenseForm.note;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showExpense]);
+
+  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => {
+    const dom = (ref.current?.value ?? "").trim();
+    const lat = (latest ?? "").trim();
+    return dom.length >= lat.length ? dom : lat;
+  };
+
+  const commitActiveInput = () => {
+    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+  };
 
   const { data: incomes, isLoading: loadingI } = useIncomes(month);
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
@@ -84,22 +119,25 @@ export default function FinancesPage() {
   };
 
   const handleSaveIncome = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(incomeForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readNote(incomeNoteRef, incomeNoteLatest.current);
     if (editIncome) {
       await updateIncomeMut.mutateAsync({
         id: editIncome.id,
         amount,
         client_id: incomeForm.client_id || null,
         payment_method: incomeForm.payment_method,
-        note: incomeForm.note || null,
+        note: note || null,
       });
     } else {
       await createIncome.mutateAsync({
         amount,
         client_id: incomeForm.client_id || null,
         payment_method: incomeForm.payment_method,
-        note: incomeForm.note || null,
+        note: note || null,
         received_at: new Date().toISOString(),
       });
     }
@@ -108,20 +146,23 @@ export default function FinancesPage() {
   };
 
   const handleSaveExpense = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(expenseForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readNote(expenseNoteRef, expenseNoteLatest.current);
     if (editExpense) {
       await updateExpenseMut.mutateAsync({
         id: editExpense.id,
         amount,
         category_id: expenseForm.category_id || null,
-        note: expenseForm.note || null,
+        note: note || null,
       });
     } else {
       await createExpense.mutateAsync({
         amount,
         category_id: expenseForm.category_id || null,
-        note: expenseForm.note || null,
+        note: note || null,
         spent_at: new Date().toISOString(),
       });
     }
@@ -272,6 +313,8 @@ export default function FinancesPage() {
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
+            type="button"
+            onPointerDown={commitActiveInput}
             onClick={handleSaveIncome}
             disabled={createIncome.isPending || updateIncomeMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
@@ -310,7 +353,15 @@ export default function FinancesPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-            <input value={incomeForm.note} onChange={(e) => setIncomeForm({ ...incomeForm, note: e.target.value })}
+            <input
+              ref={incomeNoteRef}
+              defaultValue={incomeForm.note}
+              onInput={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Маникюр + дизайн..." />
           </div>
         </div>
@@ -324,6 +375,8 @@ export default function FinancesPage() {
         footer={
           <motion.button
             whileTap={{ scale: 0.97 }}
+            type="button"
+            onPointerDown={commitActiveInput}
             onClick={handleSaveExpense}
             disabled={createExpense.isPending || updateExpenseMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
@@ -353,7 +406,15 @@ export default function FinancesPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-            <input value={expenseForm.note} onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+            <input
+              ref={expenseNoteRef}
+              defaultValue={expenseForm.note}
+              onInput={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Материалы, реклама..." />
           </div>
         </div>

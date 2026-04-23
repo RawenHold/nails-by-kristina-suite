@@ -6,8 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useServices, useCreateService, useUpdateService, useDeleteService, type Service } from "@/hooks/useServices";
 import { useExpenseCategories, useCreateExpenseCategory, useUpdateExpenseCategory, useDeleteExpenseCategory } from "@/hooks/useExpenses";
-import { useMessageTemplates, useCreateMessageTemplate, useUpdateMessageTemplate, useDeleteMessageTemplate, type MessageTemplate } from "@/hooks/useMessageTemplates";
-import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, MessageSquare, X, Pencil, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, X, Pencil, Trash2 } from "lucide-react";
 import MasterProfileCard from "@/components/settings/MasterProfileCard";
 import BackupCard from "@/components/settings/BackupCard";
 import ChangePasswordCard from "@/components/settings/ChangePasswordCard";
@@ -17,11 +16,9 @@ import { cn, formatMoney } from "@/lib/utils";
 
 type ServiceInitial = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
 type CategoryInitial = { id?: string; name: string };
-type TemplateInitial = { id?: string; title: string; body: string };
 
 const emptyService: ServiceInitial = { name: "", default_price: "", duration_minutes: "60", category: "" };
 const emptyCategory: CategoryInitial = { name: "" };
-const emptyTemplate: TemplateInitial = { title: "", body: "" };
 
 /**
  * Helper: read input value safely on Android WebView.
@@ -41,16 +38,12 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { data: services } = useServices();
   const { data: categories } = useExpenseCategories();
-  const { data: templates } = useMessageTemplates();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
   const createCategory = useCreateExpenseCategory();
   const updateCategory = useUpdateExpenseCategory();
   const deleteCategory = useDeleteExpenseCategory();
-  const createTemplate = useCreateMessageTemplate();
-  const updateTemplate = useUpdateMessageTemplate();
-  const deleteTemplate = useDeleteMessageTemplate();
   const navigate = useNavigate();
 
   // Store only the "is open + initial values + edit id". The actual current
@@ -58,27 +51,54 @@ export default function SettingsPage() {
   // IME composition issues that drop characters with controlled inputs.
   const [serviceForm, setServiceForm] = useState<ServiceInitial | null>(null);
   const [categoryForm, setCategoryForm] = useState<CategoryInitial | null>(null);
-  const [templateForm, setTemplateForm] = useState<TemplateInitial | null>(null);
 
   const serviceNameRef = useRef<HTMLInputElement>(null);
   const servicePriceRef = useRef<HTMLInputElement>(null);
   const serviceDurationRef = useRef<HTMLInputElement>(null);
   const serviceCategoryRef = useRef<HTMLInputElement>(null);
   const categoryNameRef = useRef<HTMLInputElement>(null);
-  const templateTitleRef = useRef<HTMLInputElement>(null);
-  const templateBodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // IME-safe latest-value capture: onInput fires for every keystroke including
+  // IME composition updates, so even if the user types a space and a new word
+  // ("Гель лак") and taps Save before composition end, we still have the full value.
+  const serviceNameLatest = useRef<string>("");
+  const serviceCategoryLatest = useRef<string>("");
+  const categoryNameLatest = useRef<string>("");
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
+
+  // Reset captured "latest" values whenever a form is opened.
+  useEffect(() => {
+    if (serviceForm) {
+      serviceNameLatest.current = serviceForm.name;
+      serviceCategoryLatest.current = serviceForm.category;
+    }
+  }, [serviceForm]);
+  useEffect(() => {
+    if (categoryForm) categoryNameLatest.current = categoryForm.name;
+  }, [categoryForm]);
+
+  /**
+   * Read input value, preferring the longest of:
+   *  - DOM value (most reliable when not in active IME composition)
+   *  - latest captured value via onInput (catches partial composition)
+   * This prevents losing the tail of words like "Гель лак" → "Гель" on Android.
+   */
+  const readBest = (refVal: string | undefined, latest: string) => {
+    const dom = (refVal ?? "").trim();
+    const lat = (latest ?? "").trim();
+    return dom.length >= lat.length ? dom : lat;
+  };
 
   const submitService = async () => {
     if (!serviceForm) return;
     commitActiveInput();
-    // Tiny delay to let the IME composition commit on Android
-    await new Promise((r) => setTimeout(r, 50));
-    const name = (serviceNameRef.current?.value ?? "").trim();
+    // Slightly longer delay to let Android IME flush composition end.
+    await new Promise((r) => setTimeout(r, 120));
+    const name = readBest(serviceNameRef.current?.value, serviceNameLatest.current);
     const priceRaw = (servicePriceRef.current?.value ?? "").trim();
     const durationRaw = (serviceDurationRef.current?.value ?? "").trim();
-    const category = (serviceCategoryRef.current?.value ?? "").trim();
+    const category = readBest(serviceCategoryRef.current?.value, serviceCategoryLatest.current);
     if (!name) { toast.error("Укажите название услуги"); return; }
     const payload = {
       name,
@@ -97,8 +117,8 @@ export default function SettingsPage() {
   const submitCategory = async () => {
     if (!categoryForm) return;
     commitActiveInput();
-    await new Promise((r) => setTimeout(r, 50));
-    const name = (categoryNameRef.current?.value ?? "").trim();
+    await new Promise((r) => setTimeout(r, 120));
+    const name = readBest(categoryNameRef.current?.value, categoryNameLatest.current);
     if (!name) { toast.error("Укажите название категории"); return; }
     if (categoryForm.id) {
       await updateCategory.mutateAsync({ id: categoryForm.id, name });
@@ -106,22 +126,6 @@ export default function SettingsPage() {
       await createCategory.mutateAsync(name);
     }
     setCategoryForm(null);
-  };
-
-  const submitTemplate = async () => {
-    if (!templateForm) return;
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 50));
-    const title = (templateTitleRef.current?.value ?? "").trim();
-    const body = (templateBodyRef.current?.value ?? "").trim();
-    if (!title) { toast.error("Укажите название шаблона"); return; }
-    if (!body) { toast.error("Введите текст сообщения"); return; }
-    if (templateForm.id) {
-      await updateTemplate.mutateAsync({ id: templateForm.id, title, body });
-    } else {
-      await createTemplate.mutateAsync({ title, body });
-    }
-    setTemplateForm(null);
   };
 
   const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
@@ -199,33 +203,6 @@ export default function SettingsPage() {
           )}
         </GlassCard>
 
-        {/* Message Templates */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5 text-primary" /> Шаблоны сообщений</p>
-            <button onClick={() => setTemplateForm({ ...emptyTemplate })} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5 text-primary" /></button>
-          </div>
-          {templates?.length === 0 ? <p className="text-xs text-muted-foreground">Нет шаблонов</p> : (
-            <div className="space-y-1">
-              {templates?.map((t: MessageTemplate) => (
-                <div key={t.id} className="flex items-start gap-2 py-1.5">
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(t.body); toast.success("Текст скопирован"); }}
-                    className="flex-1 min-w-0 text-left active:opacity-70"
-                  >
-                    <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{t.body}</p>
-                  </button>
-                  <button onClick={() => setTemplateForm({ id: t.id, title: t.title, body: t.body })}
-                    className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center active:scale-90 shrink-0"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                  <button onClick={() => { if (confirmDelete(t.title)) deleteTemplate.mutate(t.id); }}
-                    className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90 shrink-0"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </GlassCard>
-
         {/* Backup & restore */}
         <BackupCard />
 
@@ -253,6 +230,8 @@ export default function SettingsPage() {
                 <input
                   ref={serviceNameRef}
                   defaultValue={serviceForm.name}
+                  onInput={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
+                  onCompositionEnd={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -283,6 +262,8 @@ export default function SettingsPage() {
                 <input
                   ref={serviceCategoryRef}
                   defaultValue={serviceForm.category}
+                  onInput={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
+                  onCompositionEnd={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -316,6 +297,8 @@ export default function SettingsPage() {
               <input
                 ref={categoryNameRef}
                 defaultValue={categoryForm.name}
+                onInput={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
+                onCompositionEnd={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="sentences"
@@ -338,50 +321,6 @@ export default function SettingsPage() {
         )}
       </AnimatePresence>
 
-      {/* Template form */}
-      <AnimatePresence>
-        {templateForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setTemplateForm(null)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">{templateForm.id ? "Редактировать шаблон" : "Новый шаблон"}</h2>
-              <div className="space-y-3">
-                <input
-                  ref={templateTitleRef}
-                  defaultValue={templateForm.title}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Название шаблона"
-                />
-                <textarea
-                  ref={templateBodyRef}
-                  defaultValue={templateForm.body}
-                  rows={4}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                  placeholder="Текст сообщения..."
-                />
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  type="button"
-                  onPointerDown={commitActiveInput}
-                  onClick={submitTemplate}
-                  disabled={createTemplate.isPending || updateTemplate.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {templateForm.id ? "Сохранить" : "Добавить шаблон"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
