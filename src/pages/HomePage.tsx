@@ -173,7 +173,7 @@ export default function HomePage() {
                       : format(d, "d MMM", { locale: ru });
                 return (
                   <motion.div key={apt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <GlassCard className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => navigate("/calendar")}>
+                    <GlassCard className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => navigate("/calendar", { state: { date: apt.start_time } })}>
                       <div className="flex flex-col items-center min-w-[56px]">
                         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{dayLabel}</span>
                         <span className="text-sm font-bold text-foreground mt-0.5">{format(d, "HH:mm")}</span>
