@@ -91,11 +91,16 @@ export function useCreateExpenseCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (name: string) => {
+      if (isOffline()) {
+        const row: any = { id: crypto.randomUUID(), name, owner_id: user!.id, created_at: new Date().toISOString() };
+        await enqueueMutation({ table: "expense_categories", op: "insert", payload: row });
+        return row;
+      }
       const { data, error } = await supabase.from("expense_categories").insert({ name, owner_id: user!.id }).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория добавлена"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success(isOffline() ? "Категория сохранена офлайн" : "Категория добавлена"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -104,10 +109,14 @@ export function useUpdateExpenseCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "expense_categories", op: "update", payload: { name }, match: { id } });
+        return;
+      }
       const { error } = await supabase.from("expense_categories").update({ name }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория обновлена"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success(isOffline() ? "Изменения категории сохранены офлайн" : "Категория обновлена"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
@@ -116,10 +125,14 @@ export function useDeleteExpenseCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isOffline()) {
+        await enqueueMutation({ table: "expense_categories", op: "delete", match: { id } });
+        return;
+      }
       const { error } = await supabase.from("expense_categories").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success("Категория удалена"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expense_categories"] }); toast.success(isOffline() ? "Удаление категории сохранено офлайн" : "Категория удалена"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
