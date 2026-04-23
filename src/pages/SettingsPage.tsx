@@ -67,15 +67,38 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
+  // Reset captured "latest" values whenever a form is opened.
+  useEffect(() => {
+    if (serviceForm) {
+      serviceNameLatest.current = serviceForm.name;
+      serviceCategoryLatest.current = serviceForm.category;
+    }
+  }, [serviceForm]);
+  useEffect(() => {
+    if (categoryForm) categoryNameLatest.current = categoryForm.name;
+  }, [categoryForm]);
+
+  /**
+   * Read input value, preferring the longest of:
+   *  - DOM value (most reliable when not in active IME composition)
+   *  - latest captured value via onInput (catches partial composition)
+   * This prevents losing the tail of words like "Гель лак" → "Гель" on Android.
+   */
+  const readBest = (refVal: string | undefined, latest: string) => {
+    const dom = (refVal ?? "").trim();
+    const lat = (latest ?? "").trim();
+    return dom.length >= lat.length ? dom : lat;
+  };
+
   const submitService = async () => {
     if (!serviceForm) return;
     commitActiveInput();
-    // Tiny delay to let the IME composition commit on Android
-    await new Promise((r) => setTimeout(r, 50));
-    const name = (serviceNameRef.current?.value ?? "").trim();
+    // Slightly longer delay to let Android IME flush composition end.
+    await new Promise((r) => setTimeout(r, 120));
+    const name = readBest(serviceNameRef.current?.value, serviceNameLatest.current);
     const priceRaw = (servicePriceRef.current?.value ?? "").trim();
     const durationRaw = (serviceDurationRef.current?.value ?? "").trim();
-    const category = (serviceCategoryRef.current?.value ?? "").trim();
+    const category = readBest(serviceCategoryRef.current?.value, serviceCategoryLatest.current);
     if (!name) { toast.error("Укажите название услуги"); return; }
     const payload = {
       name,
@@ -94,8 +117,8 @@ export default function SettingsPage() {
   const submitCategory = async () => {
     if (!categoryForm) return;
     commitActiveInput();
-    await new Promise((r) => setTimeout(r, 50));
-    const name = (categoryNameRef.current?.value ?? "").trim();
+    await new Promise((r) => setTimeout(r, 120));
+    const name = readBest(categoryNameRef.current?.value, categoryNameLatest.current);
     if (!name) { toast.error("Укажите название категории"); return; }
     if (categoryForm.id) {
       await updateCategory.mutateAsync({ id: categoryForm.id, name });
