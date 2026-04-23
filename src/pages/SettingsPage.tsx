@@ -292,50 +292,6 @@ export default function SettingsPage() {
         )}
       </AnimatePresence>
 
-      {/* Template form */}
-      <AnimatePresence>
-        {templateForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setTemplateForm(null)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">{templateForm.id ? "Редактировать шаблон" : "Новый шаблон"}</h2>
-              <div className="space-y-3">
-                <input
-                  ref={templateTitleRef}
-                  defaultValue={templateForm.title}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Название шаблона"
-                />
-                <textarea
-                  ref={templateBodyRef}
-                  defaultValue={templateForm.body}
-                  rows={4}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                  placeholder="Текст сообщения..."
-                />
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  type="button"
-                  onPointerDown={commitActiveInput}
-                  onClick={submitTemplate}
-                  disabled={createTemplate.isPending || updateTemplate.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {templateForm.id ? "Сохранить" : "Добавить шаблон"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
