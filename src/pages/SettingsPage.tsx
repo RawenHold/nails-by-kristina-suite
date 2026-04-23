@@ -6,8 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useServices, useCreateService, useUpdateService, useDeleteService, type Service } from "@/hooks/useServices";
 import { useExpenseCategories, useCreateExpenseCategory, useUpdateExpenseCategory, useDeleteExpenseCategory } from "@/hooks/useExpenses";
-import { useMessageTemplates, useCreateMessageTemplate, useUpdateMessageTemplate, useDeleteMessageTemplate, type MessageTemplate } from "@/hooks/useMessageTemplates";
-import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, MessageSquare, X, Pencil, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, X, Pencil, Trash2 } from "lucide-react";
 import MasterProfileCard from "@/components/settings/MasterProfileCard";
 import BackupCard from "@/components/settings/BackupCard";
 import ChangePasswordCard from "@/components/settings/ChangePasswordCard";
@@ -17,11 +16,9 @@ import { cn, formatMoney } from "@/lib/utils";
 
 type ServiceInitial = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
 type CategoryInitial = { id?: string; name: string };
-type TemplateInitial = { id?: string; title: string; body: string };
 
 const emptyService: ServiceInitial = { name: "", default_price: "", duration_minutes: "60", category: "" };
 const emptyCategory: CategoryInitial = { name: "" };
-const emptyTemplate: TemplateInitial = { title: "", body: "" };
 
 /**
  * Helper: read input value safely on Android WebView.
