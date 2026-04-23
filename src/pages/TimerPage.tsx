@@ -504,7 +504,7 @@ export default function TimerPage() {
         </div>
       </BottomSheet>
 
-
+      <ConfirmDialog
         open={!!confirmTarget}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmTarget(null)}
