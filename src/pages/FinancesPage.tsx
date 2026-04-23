@@ -62,16 +62,7 @@ export default function FinancesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showExpense]);
 
-  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => {
-    const dom = (ref.current?.value ?? "").trim();
-    const lat = (latest ?? "").trim();
-    return dom.length >= lat.length ? dom : lat;
-  };
-
-  const commitActiveInput = () => {
-    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
-    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
-  };
+  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => (latest ?? ref.current?.value ?? "").trim();
 
   const { data: incomes, isLoading: loadingI } = useIncomes(month);
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
@@ -119,8 +110,6 @@ export default function FinancesPage() {
   };
 
   const handleSaveIncome = async () => {
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(incomeForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     const note = readNote(incomeNoteRef, incomeNoteLatest.current);
@@ -146,8 +135,6 @@ export default function FinancesPage() {
   };
 
   const handleSaveExpense = async () => {
-    commitActiveInput();
-    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(expenseForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     const note = readNote(expenseNoteRef, expenseNoteLatest.current);
@@ -314,7 +301,6 @@ export default function FinancesPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="button"
-            onPointerDown={commitActiveInput}
             onClick={handleSaveIncome}
             disabled={createIncome.isPending || updateIncomeMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
@@ -376,7 +362,6 @@ export default function FinancesPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="button"
-            onPointerDown={commitActiveInput}
             onClick={handleSaveExpense}
             disabled={createExpense.isPending || updateExpenseMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
