@@ -230,6 +230,8 @@ export default function SettingsPage() {
                 <input
                   ref={serviceNameRef}
                   defaultValue={serviceForm.name}
+                  onInput={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
+                  onCompositionEnd={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -260,6 +262,8 @@ export default function SettingsPage() {
                 <input
                   ref={serviceCategoryRef}
                   defaultValue={serviceForm.category}
+                  onInput={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
+                  onCompositionEnd={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="sentences"
@@ -293,6 +297,8 @@ export default function SettingsPage() {
               <input
                 ref={categoryNameRef}
                 defaultValue={categoryForm.name}
+                onInput={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
+                onCompositionEnd={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="sentences"
