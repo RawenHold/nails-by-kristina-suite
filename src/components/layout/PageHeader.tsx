@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { ArrowLeft, Settings, Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/logo.png";
 import HeaderScene from "@/components/layout/HeaderScene";
 import { useSideMenu } from "@/contexts/SideMenuContext";
 
