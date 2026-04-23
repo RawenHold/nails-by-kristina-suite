@@ -119,22 +119,25 @@ export default function FinancesPage() {
   };
 
   const handleSaveIncome = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(incomeForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readNote(incomeNoteRef, incomeNoteLatest.current);
     if (editIncome) {
       await updateIncomeMut.mutateAsync({
         id: editIncome.id,
         amount,
         client_id: incomeForm.client_id || null,
         payment_method: incomeForm.payment_method,
-        note: incomeForm.note || null,
+        note: note || null,
       });
     } else {
       await createIncome.mutateAsync({
         amount,
         client_id: incomeForm.client_id || null,
         payment_method: incomeForm.payment_method,
-        note: incomeForm.note || null,
+        note: note || null,
         received_at: new Date().toISOString(),
       });
     }
@@ -143,20 +146,23 @@ export default function FinancesPage() {
   };
 
   const handleSaveExpense = async () => {
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(expenseForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readNote(expenseNoteRef, expenseNoteLatest.current);
     if (editExpense) {
       await updateExpenseMut.mutateAsync({
         id: editExpense.id,
         amount,
         category_id: expenseForm.category_id || null,
-        note: expenseForm.note || null,
+        note: note || null,
       });
     } else {
       await createExpense.mutateAsync({
         amount,
         category_id: expenseForm.category_id || null,
-        note: expenseForm.note || null,
+        note: note || null,
         spent_at: new Date().toISOString(),
       });
     }
