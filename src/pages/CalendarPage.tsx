@@ -162,7 +162,7 @@ export default function CalendarPage() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         expected_price: expectedPrice,
-        notes: form.notes || null,
+        notes: notes || null,
         service_ids: form.selectedServices.map(s => ({ id: s.id, price: s.price })),
         ...(payment ? { payment } : {}),
       });
@@ -172,7 +172,7 @@ export default function CalendarPage() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         expected_price: expectedPrice,
-        notes: form.notes || undefined,
+        notes: notes || undefined,
         service_ids: form.selectedServices.map(s => ({ id: s.id, price: s.price })),
       });
     }
