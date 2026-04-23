@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import FloatingActionButton from "@/components/ui/FloatingActionButton";
@@ -44,7 +45,16 @@ const emptyForm = {
 };
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const location = useLocation();
+  const initialDate = (() => {
+    const fromState = (location.state as { date?: string } | null)?.date;
+    if (fromState) {
+      const d = new Date(fromState);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  })();
+  const [currentDate, setCurrentDate] = useState(initialDate);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [viewing, setViewing] = useState<Appointment | null>(null);
@@ -52,6 +62,46 @@ export default function CalendarPage() {
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "cash" as PaymentMethod, note: "" });
   const [form, setForm] = useState(emptyForm);
+
+  // React to subsequent navigations to /calendar with a different state.date
+  useEffect(() => {
+    const fromState = (location.state as { date?: string } | null)?.date;
+    if (fromState) {
+      const d = new Date(fromState);
+      if (!isNaN(d.getTime())) setCurrentDate(d);
+    }
+  }, [location.state]);
+
+  // IME-safe note refs (Android: keep notes in DOM so other field re-renders don't wipe composition)
+  const apptNotesRef = useRef<HTMLInputElement>(null);
+  const apptNotesLatest = useRef<string>("");
+  const completeNoteRef = useRef<HTMLInputElement>(null);
+  const completeNoteLatest = useRef<string>("");
+
+  const commitActiveInput = () => {
+    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+  };
+  const readBest = (refVal: string | undefined, latest: string) => {
+    const dom = (refVal ?? "");
+    const lat = (latest ?? "");
+    return dom.length >= lat.length ? dom : lat;
+  };
+
+  // Sync DOM value when opening the form
+  useEffect(() => {
+    if (showForm) {
+      apptNotesLatest.current = form.notes;
+      if (apptNotesRef.current) apptNotesRef.current.value = form.notes;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm]);
+  useEffect(() => {
+    if (completeTarget) {
+      completeNoteLatest.current = "";
+      if (completeNoteRef.current) completeNoteRef.current.value = "";
+    }
+  }, [completeTarget]);
 
   const { data: appointments, isLoading } = useAppointments(currentDate);
   const { data: clients } = useClients();
