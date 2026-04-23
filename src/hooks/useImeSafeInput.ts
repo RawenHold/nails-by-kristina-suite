@@ -26,10 +26,10 @@ export function useImeSafeInput<T extends HTMLInputElement | HTMLTextAreaElement
   }, []);
 
   const read = useCallback(() => {
-    // Prefer DOM value (most up-to-date) but fall back to our captured value.
-    const domVal = ref.current?.value;
-    if (domVal && domVal.length >= latest.current.length) return domVal;
-    return latest.current;
+    // On Android WebView/IME the freshest value is usually the last onInput /
+    // onCompositionEnd snapshot. Using the "longest string wins" heuristic can
+    // resurrect stale text when the user shortens or clears the field.
+    return latest.current ?? ref.current?.value ?? "";
   }, []);
 
   const reset = useCallback((v: string) => {
