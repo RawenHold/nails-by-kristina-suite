@@ -196,13 +196,16 @@ export default function CalendarPage() {
 
   const handleComplete = async () => {
     if (!completeTarget) return;
+    commitActiveInput();
+    await new Promise((r) => setTimeout(r, 80));
     const amount = parseMoney(paymentForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
+    const note = readBest(completeNoteRef.current?.value, completeNoteLatest.current);
     await completeAppointment.mutateAsync({
       appointment_id: completeTarget.id,
       paid_amount: amount,
       payment_method: paymentForm.method,
-      note: paymentForm.note || undefined,
+      note: note || undefined,
     });
     setCompleteTarget(null);
   };
@@ -391,7 +394,18 @@ export default function CalendarPage() {
           )}
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметки</label>
-            <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input-glass" placeholder="Дополнительно..." />
+            <input
+              ref={apptNotesRef}
+              defaultValue={form.notes}
+              onInput={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
+              onCompositionEnd={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              spellCheck={false}
+              className="input-glass"
+              placeholder="Дополнительно..."
+            />
           </div>
         </div>
       </BottomSheet>
