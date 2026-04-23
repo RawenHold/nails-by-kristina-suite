@@ -45,6 +45,27 @@ export function useSaveTimerSession() {
   });
 }
 
+export function useUpdateTimerSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      client_id?: string | null;
+      started_at?: string;
+      ended_at?: string;
+      duration_seconds?: number;
+      note?: string | null;
+    }) => {
+      const { id, ...patch } = input;
+      const { data, error } = await supabase.from("timer_sessions").update(patch).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["timer_sessions"] }); toast.success("Сессия обновлена"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useDeleteTimerSessions() {
   const { user } = useAuth();
   const qc = useQueryClient();
