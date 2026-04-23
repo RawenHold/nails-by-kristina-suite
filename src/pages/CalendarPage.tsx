@@ -451,8 +451,18 @@ export default function CalendarPage() {
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметка</label>
-              <input value={paymentForm.note} onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
-                className="input-glass" placeholder="Например: чаевые, комментарий..." />
+              <input
+                ref={completeNoteRef}
+                defaultValue=""
+                onInput={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+                onCompositionEnd={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
+                className="input-glass"
+                placeholder="Например: чаевые, комментарий..."
+              />
             </div>
           </div>
         )}
