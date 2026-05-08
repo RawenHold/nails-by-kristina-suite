@@ -2,8 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Hard-coded to the user's own Supabase project so preview, Vercel и мобильные
+// сборки всегда работают с одной и той же базой (без привязки к Lovable Cloud).
+const SUPABASE_URL = "https://uvvvrzwciofhalzomaej.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_zpkxzna32qZJHDRbZ5L9eg_A3SgxOjt";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
