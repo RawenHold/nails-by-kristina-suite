@@ -101,7 +101,7 @@ const App = () => (
     persistOptions={{
       persister: persister!,
       maxAge: 1000 * 60 * 60 * 24 * 7,
-      buster: "v1",
+      buster: "v2-own-db",
     }}
   >
     <TooltipProvider>
