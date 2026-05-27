@@ -29,10 +29,33 @@ export default function ClientPicker({
   const { data: clients } = useClients();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
+  const [maxH, setMaxH] = useState<number>(320);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const selected = clients?.find((c) => c.id === value);
+
+  useEffect(() => {
+    if (!open || !wrapRef.current) return;
+    const compute = () => {
+      const r = wrapRef.current!.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const margin = 16;
+      const below = vh - r.bottom - margin;
+      const above = r.top - margin;
+      const useTop = below < 240 && above > below;
+      setPlacement(useTop ? "top" : "bottom");
+      setMaxH(Math.max(200, Math.min(7 * 44 + 70, useTop ? above : below)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
+  }, [open]);
 
   const filtered = useMemo(() => {
     const list = clients ?? [];
@@ -86,7 +109,8 @@ export default function ClientPicker({
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             className={cn(
-              "absolute left-0 right-0 mt-2 z-50 origin-top",
+              "absolute left-0 right-0 z-50",
+              placement === "bottom" ? "top-full mt-2 origin-top" : "bottom-full mb-2 origin-bottom",
               "rounded-2xl border border-border/60 overflow-hidden",
               "bg-popover/90 backdrop-blur-2xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.25),0_0_0_1px_hsl(var(--border)/0.4)]",
             )}
@@ -133,7 +157,7 @@ export default function ClientPicker({
               <div
                 ref={listRef}
                 className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
-                style={{ maxHeight: "calc(7 * 44px + 12px)", scrollBehavior: "smooth" }}
+                style={{ maxHeight: maxH, scrollBehavior: "smooth" }}
               >
                 {allowEmpty && (
                   <Row
