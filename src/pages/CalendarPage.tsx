@@ -66,13 +66,13 @@ export default function CalendarPage() {
   const [form, setForm] = useState(emptyForm);
 
   // React to subsequent navigations to /calendar with a different state.date
+  const navDate = (location.state as { date?: string } | null)?.date;
   useEffect(() => {
-    const fromState = (location.state as { date?: string } | null)?.date;
-    if (fromState) {
-      const d = new Date(fromState);
+    if (navDate) {
+      const d = new Date(navDate);
       if (!isNaN(d.getTime())) setCurrentDate(d);
     }
-  }, [location.state]);
+  }, [navDate]);
 
   // IME-safe note refs (Android: keep notes in DOM so other field re-renders don't wipe composition)
   const apptNotesRef = useRef<HTMLInputElement>(null);

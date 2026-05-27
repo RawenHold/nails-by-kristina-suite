@@ -1,8 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { installAutoFlush } from "@/lib/offline/queue";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -51,9 +51,19 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = typeof window !== "undefined"
-  ? createSyncStoragePersister({ storage: window.localStorage, key: "knails-rq-cache" })
-  : undefined;
+// Safe persister: in private/incognito modes localStorage access can throw.
+// Fall back to undefined so the app still mounts.
+const persister = (() => {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const testKey = "__knails_ls_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return createSyncStoragePersister({ storage: window.localStorage, key: "knails-rq-cache" });
+  } catch {
+    return undefined;
+  }
+})();
 
 function LoadingScreen() {
   return (
@@ -109,15 +119,20 @@ function AutoFlushBoot() {
   return null;
 }
 
+const AppShell = ({ children }: { children: React.ReactNode }) =>
+  persister ? (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 7, buster: "v1" }}
+    >
+      {children}
+    </PersistQueryClientProvider>
+  ) : (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+
 const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{
-      persister: persister!,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      buster: "v1",
-    }}
-  >
+  <AppShell>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -130,7 +145,7 @@ const App = () => (
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-  </PersistQueryClientProvider>
+  </AppShell>
 );
 
 export default App;
