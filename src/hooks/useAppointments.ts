@@ -241,7 +241,7 @@ export function useCompleteAppointment() {
         owner_id: user!.id,
         client_id: apt.client_id,
         appointment_id: input.appointment_id,
-        visit_date: new Date().toISOString(),
+        visit_date: apt.start_time,
         services_performed: serviceNames,
         total_price: input.paid_amount,
         payment_method: input.payment_method,
@@ -258,7 +258,7 @@ export function useCompleteAppointment() {
         amount: input.paid_amount,
         payment_method: input.payment_method,
         note: input.note || null,
-        received_at: new Date().toISOString(),
+        received_at: apt.start_time,
       });
       if (incomeErr) throw incomeErr;
 
