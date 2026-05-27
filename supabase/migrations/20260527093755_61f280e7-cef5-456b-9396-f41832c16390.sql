@@ -1,0 +1,2 @@
+UPDATE public.visits v SET visit_date = a.start_time FROM public.appointments a WHERE v.appointment_id = a.id AND v.visit_date <> a.start_time;
+UPDATE public.incomes i SET received_at = a.start_time FROM public.appointments a WHERE i.appointment_id = a.id AND i.received_at <> a.start_time;
