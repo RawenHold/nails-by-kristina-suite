@@ -1,3 +1,4 @@
+import ClientPicker from "@/components/ui/ClientPicker";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
@@ -290,10 +291,7 @@ export default function CalendarPage() {
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
-            <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className="input-glass">
-              <option value="">Выберите клиентку</option>
-              {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-            </select>
+            <ClientPicker value={form.client_id} onChange={(id) => setForm({ ...form, client_id: id })} />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Дата визита</label>
