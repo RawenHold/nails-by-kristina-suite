@@ -73,8 +73,10 @@ export default function ClientPicker({
     }
     const below = Math.max(96, bottomBoundary - r.bottom - 8);
     const above = r.top - margin;
-    const useTop = false;
-    const maxH = Math.max(140, Math.min(7 * 44 + 70, below));
+    const useTop = !sheet && below < 220 && above > below;
+    const chromeH = 64;
+    const available = useTop ? above : below;
+    const maxH = Math.max(120, Math.min(7 * 44, available - chromeH));
     setRect({
       left: r.left,
       width: r.width,
