@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -119,15 +119,20 @@ function AutoFlushBoot() {
   return null;
 }
 
+const AppShell = ({ children }: { children: React.ReactNode }) =>
+  persister ? (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 7, buster: "v1" }}
+    >
+      {children}
+    </PersistQueryClientProvider>
+  ) : (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+
 const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{
-      persister: persister!,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      buster: "v1",
-    }}
-  >
+  <AppShell>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -140,7 +145,7 @@ const App = () => (
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-  </PersistQueryClientProvider>
+  </AppShell>
 );
 
 export default App;
