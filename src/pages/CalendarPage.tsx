@@ -307,27 +307,19 @@ export default function CalendarPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Начало</label>
-              <div className="flex gap-1">
-                <select value={form.start_hour} onChange={(e) => setForm({ ...form, start_hour: e.target.value })} className="input-glass text-center px-2">
-                  {Array.from({ length: 14 }, (_, i) => i + 8).map(h => <option key={h} value={h.toString().padStart(2, "0")}>{h.toString().padStart(2, "0")}</option>)}
-                </select>
-                <span className="self-center text-muted-foreground">:</span>
-                <select value={form.start_min} onChange={(e) => setForm({ ...form, start_min: e.target.value })} className="input-glass text-center px-2">
-                  {["00", "15", "30", "45"].map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
+              <TimePicker
+                hour={form.start_hour}
+                minute={form.start_min}
+                onChange={(h, m) => setForm({ ...form, start_hour: h, start_min: m })}
+              />
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Конец</label>
-              <div className="flex gap-1">
-                <select value={form.end_hour} onChange={(e) => setForm({ ...form, end_hour: e.target.value })} className="input-glass text-center px-2">
-                  {Array.from({ length: 14 }, (_, i) => i + 8).map(h => <option key={h} value={h.toString().padStart(2, "0")}>{h.toString().padStart(2, "0")}</option>)}
-                </select>
-                <span className="self-center text-muted-foreground">:</span>
-                <select value={form.end_min} onChange={(e) => setForm({ ...form, end_min: e.target.value })} className="input-glass text-center px-2">
-                  {["00", "15", "30", "45"].map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
+              <TimePicker
+                hour={form.end_hour}
+                minute={form.end_min}
+                onChange={(h, m) => setForm({ ...form, end_hour: h, end_min: m })}
+              />
             </div>
           </div>
           <div>
