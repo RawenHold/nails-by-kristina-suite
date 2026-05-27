@@ -21,6 +21,12 @@ import GalleryPage from "@/pages/GalleryPage";
 import TimerPage from "@/pages/TimerPage";
 import FinancesPage from "@/pages/FinancesPage";
 import SettingsPage from "@/pages/SettingsPage";
+import ProfileSettingsPage from "@/pages/settings/ProfileSettingsPage";
+import AppearanceSettingsPage from "@/pages/settings/AppearanceSettingsPage";
+import ServicesSettingsPage from "@/pages/settings/ServicesSettingsPage";
+import CategoriesSettingsPage from "@/pages/settings/CategoriesSettingsPage";
+import BackupSettingsPage from "@/pages/settings/BackupSettingsPage";
+import SecuritySettingsPage from "@/pages/settings/SecuritySettingsPage";
 import NotFound from "./pages/NotFound";
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.svg";
@@ -78,6 +84,12 @@ function AppRoutes() {
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/finances" element={<FinancesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/profile" element={<ProfileSettingsPage />} />
+            <Route path="/settings/appearance" element={<AppearanceSettingsPage />} />
+            <Route path="/settings/services" element={<ServicesSettingsPage />} />
+            <Route path="/settings/categories" element={<CategoriesSettingsPage />} />
+            <Route path="/settings/backup" element={<BackupSettingsPage />} />
+            <Route path="/settings/security" element={<SecuritySettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </>
