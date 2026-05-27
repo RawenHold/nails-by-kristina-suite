@@ -85,6 +85,24 @@ export default function FinancesPage() {
   const totalIncome = (incomes || []).reduce((s, i) => s + i.amount, 0);
   const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
+  // Highlight an income row when navigated from a client visit
+  useEffect(() => {
+    if (!navState.highlightAppointmentId || !incomes) return;
+    const match = incomes.find((i) => i.appointment_id === navState.highlightAppointmentId);
+    if (!match) return;
+    setHighlightId(match.id);
+    const t = setTimeout(() => {
+      const el = rowRefs.current[match.id];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    const clear = setTimeout(() => {
+      setHighlightId(null);
+      navigate(location.pathname, { replace: true });
+    }, 3200);
+    return () => { clearTimeout(t); clearTimeout(clear); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomes, navState.highlightAppointmentId]);
+
   const openCreateIncome = () => {
     setEditIncome(null);
     setIncomeForm({ amount: "", client_id: "", payment_method: "cash", note: "" });
