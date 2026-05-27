@@ -121,7 +121,7 @@ export function useUpdateAppointment() {
           owner_id: user!.id,
           client_id: data.client_id,
           appointment_id: id,
-          visit_date: new Date().toISOString(),
+          visit_date: data.start_time,
           services_performed: serviceNames,
           total_price: payment.paid_amount,
           payment_method: payment.payment_method,
@@ -137,7 +137,7 @@ export function useUpdateAppointment() {
           amount: payment.paid_amount,
           payment_method: payment.payment_method,
           note: payment.note || null,
-          received_at: new Date().toISOString(),
+          received_at: data.start_time,
         });
         if (incomeErr) throw incomeErr;
 
