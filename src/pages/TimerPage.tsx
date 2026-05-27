@@ -1,3 +1,4 @@
+import ClientPicker from "@/components/ui/ClientPicker";
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";

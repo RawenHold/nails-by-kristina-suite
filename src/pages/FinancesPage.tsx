@@ -1,3 +1,4 @@
+import ClientPicker from "@/components/ui/ClientPicker";
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
