@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { GlowingButton } from "@/components/ui/GlowingButton";
 
 interface ChipGroupProps {
   options: string[];
@@ -7,23 +7,23 @@ interface ChipGroupProps {
   size?: "sm" | "md";
 }
 
+/**
+ * Chip / segmented row built on top of GlowingButton — gives every chip on
+ * the platform the consistent glowing edge-bar treatment.
+ */
 export default function ChipGroup({ options, selected, onChange, size = "sm" }: ChipGroupProps) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+    <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-0.5 px-0.5">
       {options.map((opt) => (
-        <button
+        <GlowingButton
           key={opt}
+          size={size}
+          active={selected === opt}
           onClick={() => onChange(opt)}
-          className={cn(
-            "shrink-0 rounded-full font-medium transition-all duration-200",
-            size === "sm" ? "px-3.5 py-1.5 text-xs" : "px-4 py-2 text-sm",
-            selected === opt
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-secondary/80 text-muted-foreground active:bg-secondary"
-          )}
+          className="shrink-0"
         >
           {opt}
-        </button>
+        </GlowingButton>
       ))}
     </div>
   );
