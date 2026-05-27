@@ -110,7 +110,8 @@ export default function TimerPage() {
       window.removeEventListener("beforeunload", sync);
       document.removeEventListener("visibilitychange", sync);
     };
-  }, [state, elapsed, clientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const formatTime = (sec: number) => {
     const h = Math.floor(sec / 3600);

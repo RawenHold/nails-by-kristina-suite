@@ -1,11 +1,7 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 const NotFound = () => {
-  const location = useLocation();
-  useEffect(() => { console.error("404:", location.pathname); }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">

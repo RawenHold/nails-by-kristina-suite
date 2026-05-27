@@ -51,9 +51,19 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = typeof window !== "undefined"
-  ? createSyncStoragePersister({ storage: window.localStorage, key: "knails-rq-cache" })
-  : undefined;
+// Safe persister: in private/incognito modes localStorage access can throw.
+// Fall back to undefined so the app still mounts.
+const persister = (() => {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const testKey = "__knails_ls_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return createSyncStoragePersister({ storage: window.localStorage, key: "knails-rq-cache" });
+  } catch {
+    return undefined;
+  }
+})();
 
 function LoadingScreen() {
   return (
