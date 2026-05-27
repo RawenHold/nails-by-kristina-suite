@@ -292,7 +292,7 @@ export default function CalendarPage() {
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
-            <ClientPicker value={form.client_id} onChange={(id) => setForm({ ...form, client_id: id })} inlineDropdown />
+            <ClientPicker value={form.client_id} onChange={(id) => setForm({ ...form, client_id: id })} />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Дата визита</label>

@@ -55,24 +55,28 @@ export default function ClientPicker({
     const r = wrapRef.current.getBoundingClientRect();
     const vh = window.innerHeight;
     const margin = 12;
-    // Detect a sticky bottom action bar inside an open bottom sheet so we
-    // never overlap "Создать запись" and similar primary CTAs.
     let bottomBoundary = vh - margin;
     const sheet = wrapRef.current.closest('[data-bottom-sheet="open"]') as HTMLElement | null;
     if (sheet) {
-      const footer = sheet.querySelector<HTMLElement>(":scope .absolute > div:last-child > div");
-      // Generic: find the deepest sticky/border-t footer inside the sheet
-      const candidates = sheet.querySelectorAll<HTMLElement>(".border-t");
-      candidates.forEach((c) => {
-        const cr = c.getBoundingClientRect();
-        if (cr.top > r.bottom && cr.top < bottomBoundary) bottomBoundary = cr.top - 8;
-      });
-      void footer;
+      const panel = sheet.querySelector<HTMLElement>('[data-bottom-sheet-panel="true"]');
+      const content = sheet.querySelector<HTMLElement>('[data-bottom-sheet-content="true"]');
+      const footer = sheet.querySelector<HTMLElement>('[data-bottom-sheet-footer="true"]');
+      const panelRect = panel?.getBoundingClientRect();
+      const contentRect = content?.getBoundingClientRect();
+      const footerRect = footer?.getBoundingClientRect();
+      bottomBoundary = Math.min(
+        bottomBoundary,
+        contentRect?.bottom ?? bottomBoundary,
+        footerRect ? footerRect.top - 14 : bottomBoundary,
+        panelRect?.bottom ?? bottomBoundary,
+      );
     }
-    const below = bottomBoundary - r.bottom - 8;
+    const below = Math.max(96, bottomBoundary - r.bottom - 8);
     const above = r.top - margin;
-    const useTop = below < 220 && above > below;
-    const maxH = Math.max(180, Math.min(7 * 44 + 70, useTop ? above : below));
+    const useTop = !sheet && below < 220 && above > below;
+    const chromeH = 64;
+    const available = useTop ? above : below;
+    const maxH = Math.max(120, Math.min(7 * 44, available - chromeH));
     setRect({
       left: r.left,
       width: r.width,

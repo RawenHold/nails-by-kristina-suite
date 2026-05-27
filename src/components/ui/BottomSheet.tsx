@@ -34,6 +34,7 @@ export default function BottomSheet({ open, onClose, title, children, footer }: 
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
             onClick={(e) => e.stopPropagation()}
             data-no-swipe-nav
+            data-bottom-sheet-panel="true"
             className="absolute bottom-0 inset-x-0 glass-sheet rounded-t-3xl flex flex-col max-h-[92vh]"
           >
             <div className="flex items-center justify-center pt-2.5 pb-1">
@@ -49,11 +50,11 @@ export default function BottomSheet({ open, onClose, title, children, footer }: 
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="px-5 overflow-y-auto flex-1">
+            <div className="px-5 overflow-y-auto flex-1" data-bottom-sheet-content="true">
               {children}
             </div>
             {footer && (
-              <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom,0px),1rem)] border-t border-glass-border bg-popover/60 backdrop-blur-md">
+              <div className="px-5 pt-3 pb-[max(env(safe-area-inset-bottom,0px),1rem)] border-t border-glass-border bg-popover/60 backdrop-blur-md" data-bottom-sheet-footer="true">
                 {footer}
               </div>
             )}
