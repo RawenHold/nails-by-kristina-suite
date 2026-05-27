@@ -9,7 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2 } from "lucide-react";
+import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
 import { useClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
