@@ -109,7 +109,8 @@ export default function ClientPicker({
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             className={cn(
-              "absolute left-0 right-0 mt-2 z-50 origin-top",
+              "absolute left-0 right-0 z-50",
+              placement === "bottom" ? "top-full mt-2 origin-top" : "bottom-full mb-2 origin-bottom",
               "rounded-2xl border border-border/60 overflow-hidden",
               "bg-popover/90 backdrop-blur-2xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.25),0_0_0_1px_hsl(var(--border)/0.4)]",
             )}
