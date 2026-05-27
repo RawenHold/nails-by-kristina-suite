@@ -3,8 +3,10 @@ import { useEffect, useRef } from "react";
 import BottomNav from "./BottomNav";
 import SideMenu from "./SideMenu";
 import OfflineIndicator from "./OfflineIndicator";
+import AnimatedBackground from "./AnimatedBackground";
 import { useSideMenu } from "@/contexts/SideMenuContext";
 import { useTimeOfDay } from "@/hooks/useTimeOfDay";
+import { usePaletteBoot } from "@/hooks/usePalette";
 
 const EDGE_THRESHOLD = 24; // px from left edge to start menu gesture
 const OPEN_THRESHOLD = 60; // px horizontal travel to trigger menu
@@ -20,6 +22,8 @@ export default function AppLayout() {
   const { open, openMenu, closeMenu } = useSideMenu();
   // Sync the whole-app scene palette to the current time-of-day
   useTimeOfDay();
+  // Apply the user's chosen color palette + keep it in sync with light/dark
+  usePaletteBoot();
   const edgeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
   const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
@@ -120,6 +124,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen max-w-lg mx-auto relative">
+      <AnimatedBackground />
       <main key={location.pathname} className="pb-nav page-enter">
         <Outlet />
       </main>
