@@ -10,6 +10,7 @@ import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, X, Pencil, Trash2 } from
 import MasterProfileCard from "@/components/settings/MasterProfileCard";
 import BackupCard from "@/components/settings/BackupCard";
 import ChangePasswordCard from "@/components/settings/ChangePasswordCard";
+import PaletteSlider from "@/components/settings/PaletteSlider";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
@@ -152,6 +153,9 @@ export default function SettingsPage() {
             ))}
           </div>
         </GlassCard>
+
+        {/* Palette picker */}
+        <PaletteSlider />
 
         {/* Services */}
         <GlassCard>
