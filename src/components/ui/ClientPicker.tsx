@@ -29,10 +29,33 @@ export default function ClientPicker({
   const { data: clients } = useClients();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
+  const [maxH, setMaxH] = useState<number>(320);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const selected = clients?.find((c) => c.id === value);
+
+  useEffect(() => {
+    if (!open || !wrapRef.current) return;
+    const compute = () => {
+      const r = wrapRef.current!.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const margin = 16;
+      const below = vh - r.bottom - margin;
+      const above = r.top - margin;
+      const useTop = below < 240 && above > below;
+      setPlacement(useTop ? "top" : "bottom");
+      setMaxH(Math.max(200, Math.min(7 * 44 + 70, useTop ? above : below)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
+  }, [open]);
 
   const filtered = useMemo(() => {
     const list = clients ?? [];
