@@ -157,7 +157,7 @@ export default function ClientPicker({
               <div
                 ref={listRef}
                 className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
-                style={{ maxHeight: "calc(7 * 44px + 12px)", scrollBehavior: "smooth" }}
+                style={{ maxHeight: maxH, scrollBehavior: "smooth" }}
               >
                 {allowEmpty && (
                   <Row
