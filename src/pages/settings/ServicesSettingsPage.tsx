@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/utils";
 type ServiceInitial = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
 const emptyService: ServiceInitial = { name: "", default_price: "", duration_minutes: "60", category: "" };
 
-export default function ServicesSettingsPage() {
+export default function ServicesSettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: services } = useServices();
   const createService = useCreateService();
   const updateService = useUpdateService();
@@ -64,7 +64,7 @@ export default function ServicesSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Услуги" showBack hideSettings />
+      {!embedded && <PageHeader title="Услуги" showBack hideSettings />}
       <div className="px-4 space-y-4 pb-nav">
         <GlassCard>
           <div className="flex items-center justify-between mb-3">
