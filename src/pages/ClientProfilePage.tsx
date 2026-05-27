@@ -9,7 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import BottomSheet from "@/components/ui/BottomSheet";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2 } from "lucide-react";
+import { Phone, MessageCircle, CalendarDays, Bell, Clock, Palette, Sparkles, Copy, Image as ImageIcon, Edit, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatMoney } from "@/lib/utils";
 import { useClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
@@ -505,6 +505,27 @@ export default function ClientProfilePage() {
                 {visitDetails.payment_received ? "Получена" : "Не получена"} · {visitDetails.payment_method}
               </span>
             </GlassCard>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  const d = new Date(visitDetails.visit_date);
+                  setVisitDetails(null);
+                  navigate("/calendar", { state: { date: d.toISOString() } });
+                }}
+                className="h-11 rounded-2xl bg-secondary/70 text-foreground text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95"
+              >
+                <CalendarDays className="w-4 h-4" /> В календарь
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { setVisitDetails(null); navigate("/finances"); }}
+                className="h-11 rounded-2xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-primary/20"
+              >
+                <Wallet className="w-4 h-4" /> В финансы
+              </motion.button>
+            </div>
           </div>
         )}
       </BottomSheet>
