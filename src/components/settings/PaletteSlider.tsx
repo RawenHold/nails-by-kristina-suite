@@ -20,7 +20,7 @@ export default function PaletteSlider() {
         <span className="text-[11px] text-muted-foreground">{active.label}</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-2.5">
         {PALETTES.map((p) => {
           const isActive = p.id === palette;
           return (
@@ -30,35 +30,25 @@ export default function PaletteSlider() {
               onClick={() => setPalette(p.id as PaletteId)}
               whileTap={{ scale: 0.92 }}
               whileHover={{ scale: 1.05 }}
-              className="group flex flex-col items-center gap-1.5 outline-none"
+              className="flex flex-col items-center gap-1.5 outline-none"
               aria-label={p.label}
               aria-pressed={isActive}
             >
               <span
-                className="relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
+                className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
                 style={{
-                  background: `radial-gradient(circle at 30% 28%, color-mix(in srgb, ${p.swatch} 60%, white) 0%, ${p.swatch} 55%, color-mix(in srgb, ${p.swatch} 75%, black) 100%)`,
+                  background: p.swatch,
                   boxShadow: isActive
-                    ? `0 0 0 3px hsl(var(--background)), 0 0 0 5px ${p.swatch}, 0 10px 28px ${p.swatch}80`
-                    : `inset 0 1px 2px rgba(255,255,255,0.55), 0 6px 16px ${p.swatch}55, 0 2px 4px rgba(0,0,0,0.12)`,
+                    ? `0 0 0 2px hsl(var(--background)), 0 0 0 3.5px ${p.swatch}`
+                    : "0 1px 2px rgba(0,0,0,0.15)",
                 }}
               >
-                {/* glossy highlight */}
-                <span
-                  aria-hidden
-                  className="absolute top-1.5 left-2 w-5 h-3 rounded-full bg-white/55 blur-[2px] rotate-[-18deg] pointer-events-none"
-                />
                 {isActive && (
-                  <motion.span
-                    layoutId="palette-check"
-                    className="relative z-10 w-7 h-7 rounded-full bg-white/95 flex items-center justify-center shadow-md"
-                  >
-                    <Check className="w-4 h-4" strokeWidth={3} style={{ color: p.swatch }} />
-                  </motion.span>
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
                 )}
               </span>
               <span
-                className="text-[10px] font-semibold leading-none"
+                className="text-[10px] font-medium leading-none"
                 style={{ color: isActive ? p.swatch : "hsl(var(--muted-foreground))" }}
               >
                 {p.label}
