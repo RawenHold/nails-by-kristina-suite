@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 type CategoryInitial = { id?: string; name: string };
 
-export default function CategoriesSettingsPage() {
+export default function CategoriesSettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: categories } = useExpenseCategories();
   const createCategory = useCreateExpenseCategory();
   const updateCategory = useUpdateExpenseCategory();
@@ -38,7 +38,7 @@ export default function CategoriesSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Категории расходов" showBack hideSettings />
+      {!embedded && <PageHeader title="Категории расходов" showBack hideSettings />}
       <div className="px-4 space-y-4 pb-nav">
         <GlassCard>
           <div className="flex items-center justify-between mb-3">
