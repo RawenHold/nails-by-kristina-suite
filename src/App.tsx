@@ -25,6 +25,7 @@ import ProfileSettingsPage from "@/pages/settings/ProfileSettingsPage";
 import AppearanceSettingsPage from "@/pages/settings/AppearanceSettingsPage";
 import ServicesSettingsPage from "@/pages/settings/ServicesSettingsPage";
 import CategoriesSettingsPage from "@/pages/settings/CategoriesSettingsPage";
+import CatalogSettingsPage from "@/pages/settings/CatalogSettingsPage";
 import BackupSettingsPage from "@/pages/settings/BackupSettingsPage";
 import SecuritySettingsPage from "@/pages/settings/SecuritySettingsPage";
 import NotFound from "./pages/NotFound";
@@ -86,6 +87,7 @@ function AppRoutes() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/profile" element={<ProfileSettingsPage />} />
             <Route path="/settings/appearance" element={<AppearanceSettingsPage />} />
+            <Route path="/settings/catalog" element={<CatalogSettingsPage />} />
             <Route path="/settings/services" element={<ServicesSettingsPage />} />
             <Route path="/settings/categories" element={<CategoriesSettingsPage />} />
             <Route path="/settings/backup" element={<BackupSettingsPage />} />
