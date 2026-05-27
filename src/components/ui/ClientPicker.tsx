@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Search, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,10 +14,20 @@ interface ClientPickerProps {
   className?: string;
 }
 
+interface PopRect {
+  left: number;
+  width: number;
+  top: number; // resolved top of popover
+  maxH: number;
+  placement: "bottom" | "top";
+  triggerTop: number;
+  triggerBottom: number;
+}
+
 /**
- * Premium client picker — a glass dropdown popover with search.
- * Shows up to 7 clients in the visible window; the rest scroll smoothly
- * with a soft fading edge mask and a custom liquid scrollbar.
+ * Premium client picker — glass dropdown rendered into a portal with
+ * fixed positioning so it never gets clipped by bottom sheets or sticky
+ * action bars. Search is available but never auto-focused.
  */
 export default function ClientPicker({
   value,
@@ -29,32 +40,58 @@ export default function ClientPicker({
   const { data: clients } = useClients();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
-  const [maxH, setMaxH] = useState<number>(320);
+  const [rect, setRect] = useState<PopRect | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const selected = clients?.find((c) => c.id === value);
 
-  useEffect(() => {
-    if (!open || !wrapRef.current) return;
-    const compute = () => {
-      const r = wrapRef.current!.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const margin = 16;
-      const below = vh - r.bottom - margin;
-      const above = r.top - margin;
-      const useTop = below < 240 && above > below;
-      setPlacement(useTop ? "top" : "bottom");
-      setMaxH(Math.max(200, Math.min(7 * 44 + 70, useTop ? above : below)));
-    };
+  const compute = () => {
+    if (!wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const margin = 12;
+    // Detect a sticky bottom action bar inside an open bottom sheet so we
+    // never overlap "Создать запись" and similar primary CTAs.
+    let bottomBoundary = vh - margin;
+    const sheet = wrapRef.current.closest('[data-bottom-sheet="open"]') as HTMLElement | null;
+    if (sheet) {
+      const footer = sheet.querySelector<HTMLElement>(":scope .absolute > div:last-child > div");
+      // Generic: find the deepest sticky/border-t footer inside the sheet
+      const candidates = sheet.querySelectorAll<HTMLElement>(".border-t");
+      candidates.forEach((c) => {
+        const cr = c.getBoundingClientRect();
+        if (cr.top > r.bottom && cr.top < bottomBoundary) bottomBoundary = cr.top - 8;
+      });
+      void footer;
+    }
+    const below = bottomBoundary - r.bottom - 8;
+    const above = r.top - margin;
+    const useTop = below < 220 && above > below;
+    const maxH = Math.max(180, Math.min(7 * 44 + 70, useTop ? above : below));
+    setRect({
+      left: r.left,
+      width: r.width,
+      top: useTop ? r.top - 8 - maxH : r.bottom + 8,
+      maxH,
+      placement: useTop ? "top" : "bottom",
+      triggerTop: r.top,
+      triggerBottom: r.bottom,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
     compute();
-    window.addEventListener("resize", compute);
-    window.addEventListener("scroll", compute, true);
+    const onResize = () => compute();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onResize, true);
     return () => {
-      window.removeEventListener("resize", compute);
-      window.removeEventListener("scroll", compute, true);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onResize, true);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -67,7 +104,10 @@ export default function ClientPicker({
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t)) return;
+      if (popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
@@ -79,6 +119,10 @@ export default function ClientPicker({
       el?.scrollIntoView({ block: "center" });
     }
   }, [open, value]);
+
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   return (
     <div ref={wrapRef} className={cn("relative", className)}>
@@ -101,116 +145,121 @@ export default function ClientPicker({
         />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-            className={cn(
-              "absolute left-0 right-0 z-50",
-              placement === "bottom" ? "top-full mt-2 origin-top" : "bottom-full mb-2 origin-bottom",
-              "rounded-2xl border border-border/60 overflow-hidden",
-              "bg-popover/90 backdrop-blur-2xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.25),0_0_0_1px_hsl(var(--border)/0.4)]",
-            )}
-            style={{
-              backgroundImage:
-                "linear-gradient(180deg, hsl(var(--popover)/0.92) 0%, hsl(var(--popover)/0.85) 100%)",
-            }}
-          >
-            {/* iridescent top accent */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-px"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, hsl(var(--primary)/0.6), hsl(var(--accent)/0.6), transparent)",
-              }}
-            />
-
-            {/* Search */}
-            <div className="p-2 border-b border-border/40">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Поиск клиентки..."
-                  className="w-full h-10 pl-9 pr-9 rounded-xl bg-secondary/60 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
-                />
-                {query && (
-                  <button
-                    type="button"
-                    onClick={() => setQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-secondary flex items-center justify-center"
-                  >
-                    <X className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {open && rect && (
+              <motion.div
+                ref={popRef}
+                initial={{ opacity: 0, y: rect.placement === "bottom" ? -6 : 6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: rect.placement === "bottom" ? -4 : 4, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  position: "fixed",
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  zIndex: 100,
+                  transformOrigin: rect.placement === "bottom" ? "top center" : "bottom center",
+                  backgroundImage:
+                    "linear-gradient(180deg, hsl(var(--popover)/0.95) 0%, hsl(var(--popover)/0.88) 100%)",
+                }}
+                className={cn(
+                  "rounded-2xl border border-border/60 overflow-hidden",
+                  "bg-popover/90 backdrop-blur-2xl shadow-[0_24px_70px_-18px_hsl(var(--primary)/0.35),0_0_0_1px_hsl(var(--border)/0.4)]",
                 )}
-              </div>
-            </div>
-
-            {/* List window — 7 visible items, scroll for more */}
-            <div className="relative">
-              <div
-                ref={listRef}
-                className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
-                style={{ maxHeight: maxH, scrollBehavior: "smooth" }}
               >
-                {allowEmpty && (
-                  <Row
-                    label={emptyLabel}
-                    muted
-                    active={value === ""}
-                    onClick={() => {
-                      onChange("");
-                      setOpen(false);
-                    }}
-                  />
-                )}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, transparent, hsl(var(--primary)/0.6), hsl(var(--accent)/0.6), transparent)",
+                  }}
+                />
 
-                {filtered.length === 0 && (
-                  <div className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</div>
-                )}
-
-                {filtered.map((c, i) => (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, delay: Math.min(i * 0.015, 0.15) }}
-                  >
-                    <Row
-                      label={c.full_name}
-                      sub={c.phone || undefined}
-                      active={value === c.id}
-                      dataId={c.id}
-                      onClick={() => {
-                        onChange(c.id);
-                        setOpen(false);
-                      }}
+                {/* Search — not autofocused */}
+                <div className="p-2 border-b border-border/40">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Поиск клиентки..."
+                      className="w-full h-10 pl-9 pr-9 rounded-xl bg-secondary/60 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
                     />
-                  </motion.div>
-                ))}
-              </div>
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => setQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-secondary flex items-center justify-center"
+                      >
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-              {/* fade edges */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-5"
-                style={{ background: "linear-gradient(180deg, hsl(var(--popover)/0.9), transparent)" }}
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-5"
-                style={{ background: "linear-gradient(0deg, hsl(var(--popover)/0.9), transparent)" }}
-              />
-            </div>
-          </motion.div>
+                <div className="relative">
+                  <div
+                    ref={listRef}
+                    className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
+                    style={{ maxHeight: rect.maxH, scrollBehavior: "smooth" }}
+                  >
+                    {allowEmpty && (
+                      <Row
+                        label={emptyLabel}
+                        muted
+                        active={value === ""}
+                        onClick={() => {
+                          onChange("");
+                          setOpen(false);
+                        }}
+                      />
+                    )}
+
+                    {filtered.length === 0 && (
+                      <div className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+                    )}
+
+                    {filtered.map((c, i) => (
+                      <motion.div
+                        key={c.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.18, delay: Math.min(i * 0.015, 0.15) }}
+                      >
+                        <Row
+                          label={c.full_name}
+                          sub={c.phone || undefined}
+                          active={value === c.id}
+                          dataId={c.id}
+                          onClick={() => {
+                            onChange(c.id);
+                            setOpen(false);
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-5"
+                    style={{ background: "linear-gradient(180deg, hsl(var(--popover)/0.9), transparent)" }}
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-5"
+                    style={{ background: "linear-gradient(0deg, hsl(var(--popover)/0.9), transparent)" }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
     </div>
   );
 }
