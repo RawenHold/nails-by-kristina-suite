@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Search, UserRound, X } from "lucide-react";
@@ -246,7 +246,7 @@ function ClientListContent({
 }: {
   query: string;
   setQuery: (value: string) => void;
-  listRef: React.RefObject<HTMLDivElement>;
+  listRef: RefObject<HTMLDivElement>;
   maxHeight: number;
   allowEmpty: boolean;
   emptyLabel: string;
