@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Search, UserRound, X } from "lucide-react";
@@ -12,6 +12,7 @@ interface ClientPickerProps {
   allowEmpty?: boolean;
   emptyLabel?: string;
   className?: string;
+  inlineDropdown?: boolean;
 }
 
 interface PopRect {
@@ -36,6 +37,7 @@ export default function ClientPicker({
   allowEmpty = false,
   emptyLabel = "Без привязки",
   className,
+  inlineDropdown = false,
 }: ClientPickerProps) {
   const { data: clients } = useClients();
   const [open, setOpen] = useState(false);
@@ -48,6 +50,7 @@ export default function ClientPicker({
   const selected = clients?.find((c) => c.id === value);
 
   const compute = () => {
+    if (inlineDropdown) return;
     if (!wrapRef.current) return;
     const r = wrapRef.current.getBoundingClientRect();
     const vh = window.innerHeight;
@@ -82,7 +85,7 @@ export default function ClientPicker({
   };
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || inlineDropdown) return;
     compute();
     const onResize = () => compute();
     window.addEventListener("resize", onResize);
@@ -92,7 +95,7 @@ export default function ClientPicker({
       window.removeEventListener("scroll", onResize, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, inlineDropdown]);
 
   const filtered = useMemo(() => {
     const list = clients ?? [];
@@ -145,7 +148,43 @@ export default function ClientPicker({
         />
       </button>
 
-      {typeof document !== "undefined" &&
+      {inlineDropdown ? (
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={popRef}
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+              className={cn(
+                "relative z-10 mt-2 rounded-2xl border border-border/60 overflow-hidden",
+                "bg-popover/90 backdrop-blur-2xl shadow-[0_18px_45px_-18px_hsl(var(--primary)/0.35),0_0_0_1px_hsl(var(--border)/0.4)]",
+              )}
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, hsl(var(--popover)/0.95) 0%, hsl(var(--popover)/0.88) 100%)",
+              }}
+            >
+              <ClientListContent
+                query={query}
+                setQuery={setQuery}
+                listRef={listRef}
+                maxHeight={7 * 44}
+                allowEmpty={allowEmpty}
+                emptyLabel={emptyLabel}
+                value={value}
+                filtered={filtered}
+                onPick={(id) => {
+                  onChange(id);
+                  setOpen(false);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      ) : (
+        typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
             {open && rect && (
@@ -170,97 +209,126 @@ export default function ClientPicker({
                   "bg-popover/90 backdrop-blur-2xl shadow-[0_24px_70px_-18px_hsl(var(--primary)/0.35),0_0_0_1px_hsl(var(--border)/0.4)]",
                 )}
               >
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, transparent, hsl(var(--primary)/0.6), hsl(var(--accent)/0.6), transparent)",
+                <ClientListContent
+                  query={query}
+                  setQuery={setQuery}
+                  listRef={listRef}
+                  maxHeight={rect.maxH}
+                  allowEmpty={allowEmpty}
+                  emptyLabel={emptyLabel}
+                  value={value}
+                  filtered={filtered}
+                  onPick={(id) => {
+                    onChange(id);
+                    setOpen(false);
                   }}
                 />
-
-                {/* Search — not autofocused */}
-                <div className="p-2 border-b border-border/40">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Поиск клиентки..."
-                      className="w-full h-10 pl-9 pr-9 rounded-xl bg-secondary/60 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
-                    />
-                    {query && (
-                      <button
-                        type="button"
-                        onClick={() => setQuery("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-secondary flex items-center justify-center"
-                      >
-                        <X className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div
-                    ref={listRef}
-                    className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
-                    style={{ maxHeight: rect.maxH, scrollBehavior: "smooth" }}
-                  >
-                    {allowEmpty && (
-                      <Row
-                        label={emptyLabel}
-                        muted
-                        active={value === ""}
-                        onClick={() => {
-                          onChange("");
-                          setOpen(false);
-                        }}
-                      />
-                    )}
-
-                    {filtered.length === 0 && (
-                      <div className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</div>
-                    )}
-
-                    {filtered.map((c, i) => (
-                      <motion.div
-                        key={c.id}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.18, delay: Math.min(i * 0.015, 0.15) }}
-                      >
-                        <Row
-                          label={c.full_name}
-                          sub={c.phone || undefined}
-                          active={value === c.id}
-                          dataId={c.id}
-                          onClick={() => {
-                            onChange(c.id);
-                            setOpen(false);
-                          }}
-                        />
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 top-0 h-5"
-                    style={{ background: "linear-gradient(180deg, hsl(var(--popover)/0.9), transparent)" }}
-                  />
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-5"
-                    style={{ background: "linear-gradient(0deg, hsl(var(--popover)/0.9), transparent)" }}
-                  />
-                </div>
               </motion.div>
             )}
           </AnimatePresence>,
           document.body,
-        )}
+        )
+      )}
     </div>
+  );
+}
+
+function ClientListContent({
+  query,
+  setQuery,
+  listRef,
+  maxHeight,
+  allowEmpty,
+  emptyLabel,
+  value,
+  filtered,
+  onPick,
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  listRef: RefObject<HTMLDivElement>;
+  maxHeight: number;
+  allowEmpty: boolean;
+  emptyLabel: string;
+  value: string;
+  filtered: Array<{ id: string; full_name: string; phone?: string | null }>;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background: "linear-gradient(90deg, transparent, hsl(var(--primary)/0.6), hsl(var(--accent)/0.6), transparent)",
+        }}
+      />
+
+      <div className="p-2 border-b border-border/40">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск клиентки..."
+            className="w-full h-10 pl-9 pr-9 rounded-xl bg-secondary/60 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-secondary flex items-center justify-center"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="relative">
+        <div
+          ref={listRef}
+          className="client-picker-scroll overflow-y-auto overscroll-contain p-1.5"
+          style={{ maxHeight, scrollBehavior: "smooth" }}
+        >
+          {allowEmpty && (
+            <Row label={emptyLabel} muted active={value === ""} onClick={() => onPick("")} />
+          )}
+
+          {filtered.length === 0 && (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+          )}
+
+          {filtered.map((c, i) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18, delay: Math.min(i * 0.015, 0.15) }}
+            >
+              <Row
+                label={c.full_name}
+                sub={c.phone || undefined}
+                active={value === c.id}
+                dataId={c.id}
+                onClick={() => onPick(c.id)}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-5"
+          style={{ background: "linear-gradient(180deg, hsl(var(--popover)/0.9), transparent)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-5"
+          style={{ background: "linear-gradient(0deg, hsl(var(--popover)/0.9), transparent)" }}
+        />
+      </div>
+    </>
   );
 }
 
