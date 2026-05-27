@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
 import ChipGroup from "@/components/ui/ChipGroup";
@@ -27,8 +28,13 @@ const paymentMethods = [
 type PaymentMethod = "cash" | "card" | "transfer" | "other";
 
 export default function FinancesPage() {
-  const [month, setMonth] = useState(new Date());
-  const [tab, setTab] = useState("Обзор");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navState = (location.state || {}) as { date?: string; highlightAppointmentId?: string };
+  const [month, setMonth] = useState(navState.date ? new Date(navState.date) : new Date());
+  const [tab, setTab] = useState(navState.highlightAppointmentId ? "Доходы" : "Обзор");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showIncome, setShowIncome] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
   const [editIncome, setEditIncome] = useState<Income | null>(null);
@@ -78,6 +84,24 @@ export default function FinancesPage() {
 
   const totalIncome = (incomes || []).reduce((s, i) => s + i.amount, 0);
   const totalExpenses = (expenses || []).reduce((s, e) => s + e.amount, 0);
+
+  // Highlight an income row when navigated from a client visit
+  useEffect(() => {
+    if (!navState.highlightAppointmentId || !incomes) return;
+    const match = incomes.find((i) => i.appointment_id === navState.highlightAppointmentId);
+    if (!match) return;
+    setHighlightId(match.id);
+    const t = setTimeout(() => {
+      const el = rowRefs.current[match.id];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    const clear = setTimeout(() => {
+      setHighlightId(null);
+      navigate(location.pathname, { replace: true });
+    }, 3200);
+    return () => { clearTimeout(t); clearTimeout(clear); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomes, navState.highlightAppointmentId]);
 
   const openCreateIncome = () => {
     setEditIncome(null);
@@ -245,7 +269,17 @@ export default function FinancesPage() {
         ) : (
           <div className="space-y-1.5">
             {allTransactions.map((txn, i) => (
-              <motion.div key={txn.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <motion.div
+                key={txn.id}
+                ref={(el) => { rowRefs.current[txn.id] = el; }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className={cn(
+                  "rounded-2xl transition-all duration-500",
+                  highlightId === txn.id && "ring-2 ring-primary shadow-lg shadow-primary/30 bg-primary/10 animate-pulse"
+                )}
+              >
                 <GlassCard className="flex items-center gap-3 py-3" onClick={() => setDetails({ type: txn.type, data: txn.raw })}>
                   <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
                     txn.type === "income" ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20")}>

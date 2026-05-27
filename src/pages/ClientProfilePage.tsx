@@ -520,7 +520,12 @@ export default function ClientProfilePage() {
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => { setVisitDetails(null); navigate("/finances"); }}
+                onClick={() => {
+                  const d = new Date(visitDetails.visit_date);
+                  const appointmentId = (visitDetails as { appointment_id?: string }).appointment_id;
+                  setVisitDetails(null);
+                  navigate("/finances", { state: { date: d.toISOString(), highlightAppointmentId: appointmentId } });
+                }}
                 className="h-11 rounded-2xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-primary/20"
               >
                 <Wallet className="w-4 h-4" /> В финансы
