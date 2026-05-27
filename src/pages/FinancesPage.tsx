@@ -28,8 +28,13 @@ const paymentMethods = [
 type PaymentMethod = "cash" | "card" | "transfer" | "other";
 
 export default function FinancesPage() {
-  const [month, setMonth] = useState(new Date());
-  const [tab, setTab] = useState("Обзор");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navState = (location.state || {}) as { date?: string; highlightAppointmentId?: string };
+  const [month, setMonth] = useState(navState.date ? new Date(navState.date) : new Date());
+  const [tab, setTab] = useState(navState.highlightAppointmentId ? "Доходы" : "Обзор");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showIncome, setShowIncome] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
   const [editIncome, setEditIncome] = useState<Income | null>(null);
