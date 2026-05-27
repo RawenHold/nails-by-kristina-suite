@@ -4,6 +4,7 @@ import BottomNav from "./BottomNav";
 import SideMenu from "./SideMenu";
 import OfflineIndicator from "./OfflineIndicator";
 import AnimatedBackground from "./AnimatedBackground";
+import { GlassFilter } from "@/components/ui/LiquidGlass";
 import { useSideMenu } from "@/contexts/SideMenuContext";
 import { useTimeOfDay } from "@/hooks/useTimeOfDay";
 import { usePaletteBoot } from "@/hooks/usePalette";
@@ -124,6 +125,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen max-w-lg mx-auto relative">
+      <GlassFilter />
       <AnimatedBackground />
       <main key={location.pathname} className="pb-nav page-enter">
         <Outlet />

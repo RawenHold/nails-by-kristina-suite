@@ -1,328 +1,77 @@
-import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
-import GlassCard from "@/components/ui/GlassCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/hooks/useTheme";
-import { useServices, useCreateService, useUpdateService, useDeleteService, type Service } from "@/hooks/useServices";
-import { useExpenseCategories, useCreateExpenseCategory, useUpdateExpenseCategory, useDeleteExpenseCategory } from "@/hooks/useExpenses";
-import { Sun, Moon, Monitor, LogOut, Plus, Wrench, Tag, X, Pencil, Trash2 } from "lucide-react";
-import MasterProfileCard from "@/components/settings/MasterProfileCard";
-import BackupCard from "@/components/settings/BackupCard";
-import ChangePasswordCard from "@/components/settings/ChangePasswordCard";
-import PaletteSlider from "@/components/settings/PaletteSlider";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import { cn, formatMoney } from "@/lib/utils";
+import { GlassSurface } from "@/components/ui/LiquidGlass";
+import { User, Palette, Wrench, Tag, ShieldCheck, DatabaseBackup, LogOut, ChevronRight, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
-type ServiceInitial = { id?: string; name: string; default_price: string; duration_minutes: string; category: string };
-type CategoryInitial = { id?: string; name: string };
+type Item = {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  desc: string;
+  tint: string; // hsl values
+};
 
-const emptyService: ServiceInitial = { name: "", default_price: "", duration_minutes: "60", category: "" };
-const emptyCategory: CategoryInitial = { name: "" };
-
-/**
- * Helper: read input value safely on Android WebView.
- * Forces the IME composition to commit by blurring the active element first.
- * This prevents losing the last typed character / partial words when the user
- * taps "Save" before the input loses focus naturally.
- */
-function commitActiveInput() {
-  const el = document.activeElement as HTMLElement | null;
-  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
-    el.blur();
-  }
-}
+const ITEMS: Item[] = [
+  { to: "/settings/profile",    icon: User,           label: "Профиль мастера",   desc: "Имя, логотип, контакты",     tint: "350 65% 55%" },
+  { to: "/settings/appearance", icon: Palette,        label: "Внешний вид",       desc: "Тема и цветовая палитра",    tint: "280 70% 60%" },
+  { to: "/settings/services",   icon: Wrench,         label: "Услуги",            desc: "Прайс и длительность",       tint: "200 80% 55%" },
+  { to: "/settings/categories", icon: Tag,            label: "Категории расходов", desc: "Управление категориями",     tint: "150 60% 45%" },
+  { to: "/settings/backup",     icon: DatabaseBackup, label: "Резервная копия",   desc: "Экспорт и восстановление",   tint: "38 90% 55%" },
+  { to: "/settings/security",   icon: ShieldCheck,    label: "Безопасность",      desc: "Смена пароля",               tint: "0 70% 55%" },
+];
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const { data: services } = useServices();
-  const { data: categories } = useExpenseCategories();
-  const createService = useCreateService();
-  const updateService = useUpdateService();
-  const deleteService = useDeleteService();
-  const createCategory = useCreateExpenseCategory();
-  const updateCategory = useUpdateExpenseCategory();
-  const deleteCategory = useDeleteExpenseCategory();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Store only the "is open + initial values + edit id". The actual current
-  // values live in the DOM via refs, which is bullet-proof against Android
-  // IME composition issues that drop characters with controlled inputs.
-  const [serviceForm, setServiceForm] = useState<ServiceInitial | null>(null);
-  const [categoryForm, setCategoryForm] = useState<CategoryInitial | null>(null);
-
-  const serviceNameRef = useRef<HTMLInputElement>(null);
-  const servicePriceRef = useRef<HTMLInputElement>(null);
-  const serviceDurationRef = useRef<HTMLInputElement>(null);
-  const serviceCategoryRef = useRef<HTMLInputElement>(null);
-  const categoryNameRef = useRef<HTMLInputElement>(null);
-
-  // IME-safe latest-value capture: onInput fires for every keystroke including
-  // IME composition updates, so even if the user types a space and a new word
-  // ("Гель лак") and taps Save before composition end, we still have the full value.
-  const serviceNameLatest = useRef<string>("");
-  const servicePriceLatest = useRef<string>("");
-  const serviceDurationLatest = useRef<string>("60");
-  const serviceCategoryLatest = useRef<string>("");
-  const categoryNameLatest = useRef<string>("");
-
   const handleSignOut = async () => { await signOut(); navigate("/"); };
-
-  // Reset captured "latest" values whenever a form is opened.
-  useEffect(() => {
-    if (serviceForm) {
-      serviceNameLatest.current = serviceForm.name;
-      servicePriceLatest.current = serviceForm.default_price;
-      serviceDurationLatest.current = serviceForm.duration_minutes;
-      serviceCategoryLatest.current = serviceForm.category;
-    }
-  }, [serviceForm]);
-  useEffect(() => {
-    if (categoryForm) categoryNameLatest.current = categoryForm.name;
-  }, [categoryForm]);
-
-  /**
-   * Read input value, preferring the longest of:
-   *  - DOM value (most reliable when not in active IME composition)
-   *  - latest captured value via onInput (catches partial composition)
-   * This prevents losing the tail of words like "Гель лак" → "Гель" on Android.
-   */
-  const readLatest = (refVal: string | undefined, latest: string) => (latest ?? refVal ?? "").trim();
-
-  const submitService = async () => {
-    if (!serviceForm) return;
-    const name = readLatest(serviceNameRef.current?.value, serviceNameLatest.current);
-    const priceRaw = readLatest(servicePriceRef.current?.value, servicePriceLatest.current);
-    const durationRaw = readLatest(serviceDurationRef.current?.value, serviceDurationLatest.current);
-    const category = readLatest(serviceCategoryRef.current?.value, serviceCategoryLatest.current);
-    if (!name) { toast.error("Укажите название услуги"); return; }
-    const payload = {
-      name,
-      default_price: parseInt(priceRaw) || 0,
-      duration_minutes: parseInt(durationRaw) || 60,
-      category: category || null,
-    };
-    if (serviceForm.id) {
-      await updateService.mutateAsync({ id: serviceForm.id, ...payload });
-    } else {
-      await createService.mutateAsync(payload);
-    }
-    setServiceForm(null);
-  };
-
-  const submitCategory = async () => {
-    if (!categoryForm) return;
-    const name = readLatest(categoryNameRef.current?.value, categoryNameLatest.current);
-    if (!name) { toast.error("Укажите название категории"); return; }
-    if (categoryForm.id) {
-      await updateCategory.mutateAsync({ id: categoryForm.id, name });
-    } else {
-      await createCategory.mutateAsync(name);
-    }
-    setCategoryForm(null);
-  };
-
-  const confirmDelete = (label: string) => window.confirm(`Удалить «${label}»?`);
-
-  const themes = [
-    { value: "light" as const, icon: Sun, label: "Светлая" },
-    { value: "dark" as const, icon: Moon, label: "Тёмная" },
-    { value: "system" as const, icon: Monitor, label: "Системная" },
-  ];
 
   return (
     <div>
       <PageHeader title="Настройки" showBack />
-      <div className="px-4 space-y-4 pb-nav">
-        {/* Master profile */}
-        <MasterProfileCard />
+      <div className="px-4 space-y-2.5 pb-nav">
+        {ITEMS.map((item, i) => (
+          <motion.button
+            key={item.to}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate(item.to)}
+            className="w-full"
+          >
+            <GlassSurface
+              className="rounded-2xl px-3.5 py-3 flex items-center gap-3"
+              style={{ boxShadow: `0 6px 18px hsl(${item.tint} / 0.12)` }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{
+                  background: `hsl(${item.tint} / 0.15)`,
+                  color: `hsl(${item.tint})`,
+                }}
+              >
+                <item.icon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-semibold text-foreground leading-tight">{item.label}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{item.desc}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </GlassSurface>
+          </motion.button>
+        ))}
 
-        {/* Theme */}
-        <GlassCard>
-          <p className="text-xs font-semibold text-foreground mb-3">Тема оформления</p>
-          <div className="flex gap-2">
-            {themes.map(t => (
-              <button key={t.value} onClick={() => setTheme(t.value)}
-                className={cn("flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all",
-                  theme === t.value ? "bg-primary/10 ring-2 ring-primary/20" : "bg-secondary/50")}>
-                <t.icon className={cn("w-5 h-5", theme === t.value ? "text-primary" : "text-muted-foreground")} />
-                <span className={cn("text-[11px] font-medium", theme === t.value ? "text-primary" : "text-muted-foreground")}>{t.label}</span>
-              </button>
-            ))}
-          </div>
-        </GlassCard>
-
-        {/* Palette picker */}
-        <PaletteSlider />
-
-        {/* Services */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Wrench className="w-3.5 h-3.5 text-primary" /> Услуги</p>
-            <button onClick={() => setServiceForm({ ...emptyService })} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5 text-primary" /></button>
-          </div>
-          {services?.length === 0 ? <p className="text-xs text-muted-foreground">Нет услуг</p> : (
-            <div className="space-y-1">
-              {services?.map((s: Service) => (
-                <div key={s.id} className="flex items-center gap-2 py-1.5 group">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground truncate">{s.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{formatMoney(s.default_price)} сум · {s.duration_minutes} мин</p>
-                  </div>
-                  <button onClick={() => setServiceForm({ id: s.id, name: s.name, default_price: String(s.default_price), duration_minutes: String(s.duration_minutes), category: s.category ?? "" })}
-                    className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center active:scale-90"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                  <button onClick={() => { if (confirmDelete(s.name)) deleteService.mutate(s.id); }}
-                    className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </GlassCard>
-
-        {/* Expense Categories */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-primary" /> Категории расходов</p>
-            <button onClick={() => setCategoryForm({ ...emptyCategory })} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center active:scale-90"><Plus className="w-3.5 h-3.5 text-primary" /></button>
-          </div>
-          {categories?.length === 0 ? <p className="text-xs text-muted-foreground">Нет категорий</p> : (
-            <div className="space-y-1">
-              {categories?.map(c => (
-                <div key={c.id} className="flex items-center gap-2 py-1.5">
-                  <span className="flex-1 min-w-0 truncate text-xs text-foreground">{c.name}</span>
-                  <button onClick={() => setCategoryForm({ id: c.id, name: c.name })}
-                    className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center active:scale-90"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                  <button onClick={() => { if (confirmDelete(c.name)) deleteCategory.mutate(c.id); }}
-                    className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center active:scale-90"><Trash2 className="w-3.5 h-3.5 text-destructive" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </GlassCard>
-
-        {/* Backup & restore */}
-        <BackupCard />
-
-        {/* Change password */}
-        <ChangePasswordCard />
-
-        {/* Sign out */}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={handleSignOut}
-          className="w-full h-12 rounded-2xl bg-destructive/10 text-destructive font-semibold text-sm flex items-center justify-center gap-2">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleSignOut}
+          className="w-full h-12 mt-4 rounded-2xl bg-destructive/10 text-destructive font-semibold text-sm flex items-center justify-center gap-2"
+        >
           <LogOut className="w-4 h-4" /> Выйти
         </motion.button>
       </div>
-
-      {/* Service form */}
-      <AnimatePresence>
-        {serviceForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setServiceForm(null)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">{serviceForm.id ? "Редактировать услугу" : "Новая услуга"}</h2>
-                <button onClick={() => setServiceForm(null)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </div>
-              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submitService(); }}>
-                <input
-                  ref={serviceNameRef}
-                  defaultValue={serviceForm.name}
-                  onInput={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
-                  onCompositionEnd={(e) => { serviceNameLatest.current = (e.target as HTMLInputElement).value; }}
-                  lang="ru"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Название услуги"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    ref={servicePriceRef}
-                    type="number"
-                    inputMode="numeric"
-                    defaultValue={serviceForm.default_price}
-                    onInput={(e) => { servicePriceLatest.current = (e.target as HTMLInputElement).value; }}
-                    autoComplete="off"
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
-                    placeholder="Цена (сум)"
-                  />
-                  <input
-                    ref={serviceDurationRef}
-                    type="number"
-                    inputMode="numeric"
-                    defaultValue={serviceForm.duration_minutes}
-                    onInput={(e) => { serviceDurationLatest.current = (e.target as HTMLInputElement).value; }}
-                    autoComplete="off"
-                    className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
-                    placeholder="Минут"
-                  />
-                </div>
-                <input
-                  ref={serviceCategoryRef}
-                  defaultValue={serviceForm.category}
-                  onInput={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
-                  onCompositionEnd={(e) => { serviceCategoryLatest.current = (e.target as HTMLInputElement).value; }}
-                  lang="ru"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck={false}
-                  className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
-                  placeholder="Категория (необязательно)"
-                />
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  type="submit"
-                  disabled={createService.isPending || updateService.isPending}
-                  className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {createService.isPending || updateService.isPending ? "Сохранение..." : serviceForm.id ? "Сохранить" : "Добавить услугу"}
-                </motion.button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Category form */}
-      <AnimatePresence>
-        {categoryForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-bottom-sheet="open" data-no-swipe-nav className="fixed inset-0 z-[60] bg-black/40" onClick={() => setCategoryForm(null)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">{categoryForm.id ? "Редактировать категорию" : "Новая категория"}</h2>
-              <form onSubmit={(e) => { e.preventDefault(); submitCategory(); }}>
-              <input
-                ref={categoryNameRef}
-                defaultValue={categoryForm.name}
-                onInput={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
-                onCompositionEnd={(e) => { categoryNameLatest.current = (e.target as HTMLInputElement).value; }}
-                lang="ru"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="sentences"
-                spellCheck={false}
-                className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 mb-3"
-                placeholder="Название категории"
-              />
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                type="submit"
-                disabled={createCategory.isPending || updateCategory.isPending}
-                className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
-              >
-                {categoryForm.id ? "Сохранить" : "Добавить"}
-              </motion.button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
     </div>
   );
 }
