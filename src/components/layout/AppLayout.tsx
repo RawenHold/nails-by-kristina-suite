@@ -125,6 +125,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen max-w-lg mx-auto relative">
+      <GlassFilter />
       <AnimatedBackground />
       <main key={location.pathname} className="pb-nav page-enter">
         <Outlet />
