@@ -319,11 +319,7 @@ export default function TimerPage() {
         {/* Link to client */}
         <GlassCard>
           <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Клиентка</label>
-          <select value={clientId} onChange={(e) => setClientId(e.target.value)}
-            className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-            <option value="">Без привязки</option>
-            {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-          </select>
+          <ClientPicker value={clientId} onChange={setClientId} allowEmpty placeholder="Без привязки" />
           <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 mt-3 block uppercase tracking-wide">Заметка</label>
           <input
             ref={note.ref}
@@ -462,11 +458,7 @@ export default function TimerPage() {
         <div className="space-y-3 pb-4">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Клиентка</label>
-            <select value={editClientId} onChange={(e) => setEditClientId(e.target.value)}
-              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="">Без привязки</option>
-              {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-            </select>
+            <ClientPicker value={editClientId} onChange={setEditClientId} allowEmpty placeholder="Без привязки" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wide">Начало</label>

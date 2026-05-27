@@ -356,11 +356,7 @@ export default function FinancesPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Клиентка</label>
-            <select value={incomeForm.client_id} onChange={(e) => setIncomeForm({ ...incomeForm, client_id: e.target.value })}
-              className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none">
-              <option value="">Без привязки</option>
-              {clients?.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-            </select>
+            <ClientPicker value={incomeForm.client_id} onChange={(id) => setIncomeForm({ ...incomeForm, client_id: id })} allowEmpty placeholder="Без привязки" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Способ оплаты</label>
