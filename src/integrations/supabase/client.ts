@@ -2,8 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Publishable (anon) key + project URL are safe to ship in client code.
+// We keep hardcoded fallbacks so the app works on any host (Vercel, Netlify,
+// custom domains, etc.) even if VITE_SUPABASE_* env vars are not configured
+// in the deployment platform.
+const FALLBACK_SUPABASE_URL = "https://pzlzpwdldmapkofocvyj.supabase.co";
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6bHpwd2RsZG1hcGtvZm9jdnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMjk4NjksImV4cCI6MjA5MTgwNTg2OX0.2A-BX-lEl-9yV7KhRG-y2lp20ug3iVfUiU2NlUXSE-U";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
