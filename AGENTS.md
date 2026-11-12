@@ -1,0 +1,3 @@
+# Engineering rules
+- Persist free-text form fields through uncontrolled IME-safe bindings and read the live DOM after committing focused input; Android composition snapshots can lag behind the displayed text.
+- Build Android CI packages from bundled web assets without a remote preview URL; generate the native shell reproducibly when it is absent, retaining the configured application identity and auth deep link.
