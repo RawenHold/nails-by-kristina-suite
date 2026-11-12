@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useImeSafeFields } from "@/hooks/useImeSafeFields";
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
+import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -63,6 +65,7 @@ export default function ClientProfilePage() {
     lifecycle_status: "active" as "new" | "active" | "inactive" | "lost" | "vip",
     loyalty_level: "bronze" as "bronze" | "silver" | "gold" | "vip",
   });
+  const text = useImeSafeFields({ full_name: "", phone: "", telegram_username: "", allergies: "", notes: "", favorite_colors: "", favorite_designs: "" });
   const navigate = useNavigate();
 
   const { data: client, isLoading } = useClient(id);
@@ -74,9 +77,9 @@ export default function ClientProfilePage() {
 
   const formatCurrency = formatMoney;
 
-  useEffect(() => {
-    if (client && showEdit) {
-      setEditForm({
+  const openClientEdit = () => {
+    if (!client) return;
+    const next = {
         full_name: client.full_name,
         phone: client.phone || "",
         telegram_username: client.telegram_username || "",
@@ -89,9 +92,11 @@ export default function ClientProfilePage() {
         manual_reminder_date: client.manual_reminder_date || "",
         lifecycle_status: client.lifecycle_status,
         loyalty_level: client.loyalty_level,
-      });
-    }
-  }, [client, showEdit]);
+      };
+    setEditForm(next);
+    text.reset({ full_name: next.full_name, phone: next.phone, telegram_username: next.telegram_username, allergies: next.allergies, notes: next.notes, favorite_colors: next.favorite_colors, favorite_designs: next.favorite_designs });
+    setShowEdit(true);
+  };
 
   if (isLoading) return <div className="min-h-screen"><PageHeader title="Загрузка..." showBack /><div className="px-4 space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 rounded-2xl shimmer" />)}</div></div>;
   if (!client) return <div className="min-h-screen"><PageHeader title="Не найдена" showBack /><EmptyState icon={Sparkles} title="Клиентка не найдена" description="" /></div>;
@@ -99,14 +104,10 @@ export default function ClientProfilePage() {
   const c = client;
 
   const handleCreateReminder = async () => {
-    // commit IME composition before reading
-    const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
-    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
-    await new Promise((r) => setTimeout(r, 80));
+    await commitTextInput();
     if (!reminderDate) { toast.error("Выберите дату"); return; }
-    const dom = (reminderNoteRef.current?.value ?? "");
     const lat = reminderNoteLatest.current ?? "";
-    const note = (dom.length >= lat.length ? dom : lat).trim();
+    const note = (reminderNoteRef.current?.value ?? lat).trim();
     await createReminder.mutateAsync({ client_id: c.id, reminder_date: reminderDate, notes: note || null });
     setShowReminder(false);
     setReminderDate("");
@@ -115,21 +116,23 @@ export default function ClientProfilePage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editForm.full_name.trim()) { toast.error("Имя обязательно"); return; }
+    await commitTextInput();
+    const draft = { ...editForm, ...text.read() };
+    if (!draft.full_name.trim()) { toast.error("Имя обязательно"); return; }
     await updateClient.mutateAsync({
       id: c.id,
-      full_name: editForm.full_name.trim(),
-      phone: editForm.phone || null,
-      telegram_username: editForm.telegram_username || null,
-      notes: editForm.notes || null,
-      favorite_shape: editForm.favorite_shape || null,
-      favorite_length: editForm.favorite_length || null,
-      allergies: editForm.allergies || null,
-      favorite_colors: editForm.favorite_colors ? editForm.favorite_colors.split(",").map(s => s.trim()).filter(Boolean) : null,
-      favorite_designs: editForm.favorite_designs ? editForm.favorite_designs.split(",").map(s => s.trim()).filter(Boolean) : null,
-      manual_reminder_date: editForm.manual_reminder_date || null,
-      lifecycle_status: editForm.lifecycle_status,
-      loyalty_level: editForm.loyalty_level,
+      full_name: draft.full_name.trim(),
+      phone: draft.phone || null,
+      telegram_username: draft.telegram_username || null,
+      notes: draft.notes || null,
+      favorite_shape: draft.favorite_shape || null,
+      favorite_length: draft.favorite_length || null,
+      allergies: draft.allergies || null,
+      favorite_colors: draft.favorite_colors ? draft.favorite_colors.split(",").map(s => s.trim()).filter(Boolean) : null,
+      favorite_designs: draft.favorite_designs ? draft.favorite_designs.split(",").map(s => s.trim()).filter(Boolean) : null,
+      manual_reminder_date: draft.manual_reminder_date || null,
+      lifecycle_status: draft.lifecycle_status,
+      loyalty_level: draft.loyalty_level,
     });
     setShowEdit(false);
   };
@@ -153,7 +156,7 @@ export default function ClientProfilePage() {
               { icon: MessageCircle, label: "Telegram", action: () => { if (c.telegram_username) window.open(`https://t.me/${c.telegram_username.replace("@", "")}`, "_blank"); else toast.error("Telegram не указан"); } },
               { icon: CalendarDays, label: "Запись", action: () => navigate("/calendar") },
               { icon: Bell, label: "Напомнить", action: () => setShowReminder(true) },
-              { icon: Edit, label: "Изменить", action: () => setShowEdit(true) },
+              { icon: Edit, label: "Изменить", action: openClientEdit },
               { icon: Trash2, label: "Удалить", action: () => setShowDelete(true), destructive: true },
             ].map(a => (
               <button key={a.label} onClick={a.action} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
@@ -301,7 +304,7 @@ export default function ClientProfilePage() {
         onClose={() => setShowReminder(false)}
         title="Напоминание"
         footer={
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreateReminder} disabled={createReminder.isPending}
+          <motion.button whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={handleCreateReminder} disabled={createReminder.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
             {createReminder.isPending ? "Сохранение..." : "Создать напоминание"}
           </motion.button>
@@ -320,7 +323,7 @@ export default function ClientProfilePage() {
               defaultValue=""
               onInput={(e) => { reminderNoteLatest.current = (e.target as HTMLInputElement).value; }}
               onCompositionEnd={(e) => { reminderNoteLatest.current = (e.target as HTMLInputElement).value; }}
-              autoComplete="off"
+              lang="ru" autoComplete="off"
               autoCorrect="off"
               autoCapitalize="sentences"
               spellCheck={false}
@@ -337,7 +340,7 @@ export default function ClientProfilePage() {
         onClose={() => setShowEdit(false)}
         title="Редактировать клиентку"
         footer={
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveEdit} disabled={updateClient.isPending}
+          <motion.button whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={handleSaveEdit} disabled={updateClient.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
             {updateClient.isPending ? "Сохранение..." : "Сохранить изменения"}
           </motion.button>
@@ -346,18 +349,18 @@ export default function ClientProfilePage() {
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Имя *</label>
-            <input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+            <input {...text.field("full_name")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Телефон</label>
-              <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              <input {...text.field("phone")}
                 className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="+998..." />
             </div>
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Telegram</label>
-              <input value={editForm.telegram_username} onChange={(e) => setEditForm({ ...editForm, telegram_username: e.target.value })}
+              <input {...text.field("telegram_username")}
                 className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="@username" />
             </div>
           </div>
@@ -381,23 +384,23 @@ export default function ClientProfilePage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Любимые цвета</label>
-            <input value={editForm.favorite_colors} onChange={(e) => setEditForm({ ...editForm, favorite_colors: e.target.value })}
+            <input {...text.field("favorite_colors")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Розовый, нюд, бордо..." />
             <p className="text-[10px] text-muted-foreground mt-1">Через запятую</p>
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Любимые дизайны</label>
-            <input value={editForm.favorite_designs} onChange={(e) => setEditForm({ ...editForm, favorite_designs: e.target.value })}
+            <input {...text.field("favorite_designs")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" placeholder="Френч, омбре..." />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Аллергии</label>
-            <input value={editForm.allergies} onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
+            <input {...text.field("allergies")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase">Заметки</label>
-            <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2}
+            <textarea {...text.field("notes")} rows={2}
               className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none resize-none" />
           </div>
           <div>

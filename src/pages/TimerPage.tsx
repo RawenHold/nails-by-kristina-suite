@@ -1,3 +1,4 @@
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import ClientPicker from "@/components/ui/ClientPicker";
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -152,6 +153,7 @@ export default function TimerPage() {
     localStorage.removeItem(TIMER_STORAGE_KEY);
   };
   const handleStop = async () => {
+    await commitTextInput();
     const finalElapsed = runStartedAtMsRef.current
       ? pausedElapsedRef.current + Math.max(0, Math.floor((Date.now() - runStartedAtMsRef.current) / 1000))
       : elapsed;
@@ -226,6 +228,7 @@ export default function TimerPage() {
   };
 
   const handleSaveEdit = async () => {
+    await commitTextInput();
     if (!editingId) return;
     const startMs = new Date(editStartedAt).getTime();
     const endMs = new Date(editEndedAt).getTime();
@@ -293,7 +296,7 @@ export default function TimerPage() {
             {state === "running" ? (
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={handleStop}
+                onPointerDown={commitActiveInput} onClick={handleStop}
                 className="w-[68px] h-[68px] rounded-full text-destructive text-sm font-semibold ring-1 ring-destructive/30 bg-destructive/15 active:bg-destructive/25"
               >
                 Стоп
@@ -451,7 +454,7 @@ export default function TimerPage() {
             <button onClick={closeEdit} className="flex-1 h-11 rounded-2xl bg-secondary/70 text-foreground text-sm font-medium active:bg-secondary">
               Отмена
             </button>
-            <button onClick={handleSaveEdit} className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold active:opacity-80">
+            <button onPointerDown={commitActiveInput} onClick={handleSaveEdit} className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold active:opacity-80">
               Сохранить
             </button>
           </div>

@@ -1,4 +1,6 @@
 import { useRef, useCallback } from "react";
+import { readInputValue } from "@/lib/ime";
+export { commitActiveInput, commitTextInput } from "@/lib/ime";
 
 /**
  * Hook to reliably capture text input values on Android WebView, where the IME
@@ -26,10 +28,7 @@ export function useImeSafeInput<T extends HTMLInputElement | HTMLTextAreaElement
   }, []);
 
   const read = useCallback(() => {
-    // On Android WebView/IME the freshest value is usually the last onInput /
-    // onCompositionEnd snapshot. Using the "longest string wins" heuristic can
-    // resurrect stale text when the user shortens or clears the field.
-    return latest.current ?? ref.current?.value ?? "";
+    return readInputValue(ref.current, latest.current);
   }, []);
 
   const reset = useCallback((v: string) => {
@@ -37,16 +36,5 @@ export function useImeSafeInput<T extends HTMLInputElement | HTMLTextAreaElement
     if (ref.current) ref.current.value = v;
   }, []);
 
-  return { ref, initial, onInput, onCompositionEnd, read, reset };
-}
-
-/**
- * Force any currently-focused input/textarea to commit its IME composition
- * by blurring it. Call this on pointerDown of submit buttons.
- */
-export function commitActiveInput() {
-  const el = (typeof document !== "undefined" ? document.activeElement : null) as HTMLElement | null;
-  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
-    el.blur();
-  }
+  return { ref, initial: latest.current, onInput, onCompositionEnd, onBlur: onInput, read, reset };
 }

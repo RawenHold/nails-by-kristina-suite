@@ -1,3 +1,5 @@
+import { useImeSafeFields } from "@/hooks/useImeSafeFields";
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import { useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -28,6 +30,7 @@ export default function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ full_name: "", phone: "", telegram_username: "", notes: "", favorite_shape: "", favorite_length: "", allergies: "" });
+  const text = useImeSafeFields({ full_name: "", phone: "", telegram_username: "", allergies: "", notes: "" });
   const navigate = useNavigate();
 
   const { data: clients, isLoading } = useClients({ search, lifecycle: filterMap[activeFilter] });
@@ -37,16 +40,19 @@ export default function ClientsPage() {
   const formatCurrency = formatMoney;
 
   const handleCreate = async () => {
-    if (!form.full_name.trim()) { toast.error("Укажите имя клиентки"); return; }
+    await commitTextInput();
+    const draft = { ...form, ...text.read() };
+    if (!draft.full_name.trim()) { toast.error("Укажите имя клиентки"); return; }
     await createClient.mutateAsync({
-      full_name: form.full_name.trim(),
-      phone: form.phone || null,
-      telegram_username: form.telegram_username || null,
-      notes: form.notes || null,
-      favorite_shape: form.favorite_shape || null,
-      favorite_length: form.favorite_length || null,
-      allergies: form.allergies || null,
+      full_name: draft.full_name.trim(),
+      phone: draft.phone || null,
+      telegram_username: draft.telegram_username || null,
+      notes: draft.notes || null,
+      favorite_shape: draft.favorite_shape || null,
+      favorite_length: draft.favorite_length || null,
+      allergies: draft.allergies || null,
     });
+    text.reset({ full_name: "", phone: "", telegram_username: "", allergies: "", notes: "" });
     setShowForm(false);
     setForm({ full_name: "", phone: "", telegram_username: "", notes: "", favorite_shape: "", favorite_length: "", allergies: "" });
   };
@@ -113,7 +119,7 @@ export default function ClientsPage() {
         onClose={() => setShowForm(false)}
         title="Новая клиентка"
         footer={
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate} disabled={createClient.isPending}
+          <motion.button whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={handleCreate} disabled={createClient.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
             {createClient.isPending ? "Сохранение..." : "Добавить клиентку"}
           </motion.button>
@@ -122,17 +128,17 @@ export default function ClientsPage() {
         <div className="space-y-3 pb-2">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Имя *</label>
-            <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            <input {...text.field("full_name")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Анна Каримова" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Телефон</label>
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            <input {...text.field("phone")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="+998 90 123 4567" />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Telegram</label>
-            <input value={form.telegram_username} onChange={(e) => setForm({ ...form, telegram_username: e.target.value })}
+            <input {...text.field("telegram_username")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="@username" />
           </div>
           <div>
@@ -155,12 +161,12 @@ export default function ClientsPage() {
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Аллергии</label>
-            <input value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
+            <input {...text.field("allergies")}
               className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Чувствительность к материалам..." />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">Заметки</label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
+            <textarea {...text.field("notes")} rows={2}
               className="w-full px-4 py-3 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Любые заметки..." />
           </div>
         </div>
@@ -169,7 +175,7 @@ export default function ClientsPage() {
       <ConfirmDialog open={!!deleteId} onConfirm={() => { if (deleteId) deleteClient.mutate(deleteId); setDeleteId(null); }}
         onCancel={() => setDeleteId(null)} title="Архивировать клиентку?" description="Клиентка будет перемещена в архив." />
 
-      <FloatingActionButton onClick={() => setShowForm(true)} />
+      <FloatingActionButton onClick={() => { text.reset({ full_name: "", phone: "", telegram_username: "", allergies: "", notes: "" }); setShowForm(true); }} />
     </div>
   );
 }

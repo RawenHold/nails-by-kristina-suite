@@ -1,3 +1,4 @@
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import { useState, useRef, useEffect } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -23,8 +24,9 @@ export default function CategoriesSettingsPage({ embedded = false }: { embedded?
   }, [categoryForm]);
 
   const submit = async () => {
+    await commitTextInput();
     if (!categoryForm) return;
-    const name = (nameLatest.current ?? nameRef.current?.value ?? "").trim();
+    const name = (nameRef.current?.value ?? nameLatest.current ?? "").trim();
     if (!name) { toast.error("Укажите название категории"); return; }
     if (categoryForm.id) {
       await updateCategory.mutateAsync({ id: categoryForm.id, name });
@@ -77,14 +79,14 @@ export default function CategoriesSettingsPage({ embedded = false }: { embedded?
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()} data-no-swipe-nav className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl p-5 safe-bottom">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">{categoryForm.id ? "Редактировать категорию" : "Новая категория"}</h2>
-              <form onSubmit={(e) => { e.preventDefault(); submit(); }}>
+              <form onSubmit={(e) => { e.preventDefault(); void submit().catch(() => { /* Mutation reports the error; retain draft. */ }); }}>
                 <input ref={nameRef} defaultValue={categoryForm.name}
                   onInput={(e) => { nameLatest.current = (e.target as HTMLInputElement).value; }}
                   onCompositionEnd={(e) => { nameLatest.current = (e.target as HTMLInputElement).value; }}
                   lang="ru" autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
                   className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 mb-3"
                   placeholder="Название категории" />
-                <motion.button whileTap={{ scale: 0.97 }} type="submit"
+                <motion.button whileTap={{ scale: 0.97 }} type="submit" onPointerDown={commitActiveInput}
                   disabled={createCategory.isPending || updateCategory.isPending}
                   className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
                   {categoryForm.id ? "Сохранить" : "Добавить"}

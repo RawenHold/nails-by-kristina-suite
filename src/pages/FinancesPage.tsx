@@ -1,3 +1,4 @@
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import ClientPicker from "@/components/ui/ClientPicker";
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -69,7 +70,7 @@ export default function FinancesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showExpense]);
 
-  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => (latest ?? ref.current?.value ?? "").trim();
+  const readNote = (ref: React.RefObject<HTMLInputElement>, latest: string) => (ref.current?.value ?? latest ?? "").trim();
 
   const { data: incomes, isLoading: loadingI } = useIncomes(month);
   const { data: expenses, isLoading: loadingE } = useExpenses(month);
@@ -135,6 +136,7 @@ export default function FinancesPage() {
   };
 
   const handleSaveIncome = async () => {
+    await commitTextInput();
     const amount = parseMoney(incomeForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     const note = readNote(incomeNoteRef, incomeNoteLatest.current);
@@ -160,6 +162,7 @@ export default function FinancesPage() {
   };
 
   const handleSaveExpense = async () => {
+    await commitTextInput();
     const amount = parseMoney(expenseForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
     const note = readNote(expenseNoteRef, expenseNoteLatest.current);
@@ -336,7 +339,7 @@ export default function FinancesPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="button"
-            onClick={handleSaveIncome}
+            onPointerDown={commitActiveInput} onClick={handleSaveIncome}
             disabled={createIncome.isPending || updateIncomeMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
           >
@@ -375,7 +378,7 @@ export default function FinancesPage() {
               defaultValue={incomeForm.note}
               onInput={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
               onCompositionEnd={(e) => { incomeNoteLatest.current = (e.target as HTMLInputElement).value; }}
-              autoComplete="off"
+              lang="ru" autoComplete="off"
               autoCorrect="off"
               autoCapitalize="sentences"
               spellCheck={false}
@@ -393,7 +396,7 @@ export default function FinancesPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="button"
-            onClick={handleSaveExpense}
+            onPointerDown={commitActiveInput} onClick={handleSaveExpense}
             disabled={createExpense.isPending || updateExpenseMut.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
           >
@@ -427,7 +430,7 @@ export default function FinancesPage() {
               defaultValue={expenseForm.note}
               onInput={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
               onCompositionEnd={(e) => { expenseNoteLatest.current = (e.target as HTMLInputElement).value; }}
-              autoComplete="off"
+              lang="ru" autoComplete="off"
               autoCorrect="off"
               autoCapitalize="sentences"
               spellCheck={false}
