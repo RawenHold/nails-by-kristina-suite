@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
+import { useImeSafeFields } from "@/hooks/useImeSafeFields";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Pencil, X, Phone, Instagram, Send, User as UserIcon, Loader2, Trash2 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
@@ -30,21 +32,10 @@ export default function MasterProfileCard() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ display_name: "", phone: "", instagram: "", telegram: "" });
-
-  useEffect(() => {
-    if (profile && open) {
-      setForm({
-        display_name: profile.display_name ?? "",
-        phone: profile.phone ?? "",
-        instagram: profile.instagram ?? "",
-        telegram: profile.telegram ?? "",
-      });
-    }
-  }, [open, profile]);
+  const text = useImeSafeFields({ display_name: "", phone: "", instagram: "", telegram: "" });
 
   const openEdit = () => {
-    setForm({
+    text.reset({
       display_name: profile?.display_name ?? "",
       phone: profile?.phone ?? "",
       instagram: profile?.instagram ?? "",
@@ -54,6 +45,8 @@ export default function MasterProfileCard() {
   };
 
   const submit = async () => {
+    await commitTextInput();
+    const form = text.read();
     await upsert.mutateAsync({
       display_name: form.display_name.trim() || null,
       phone: form.phone.trim() || null,
@@ -176,12 +169,12 @@ export default function MasterProfileCard() {
                 <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-3">
-                <Field icon={<UserIcon className="w-4 h-4" />} placeholder="Имя" value={form.display_name} onChange={(v) => setForm({ ...form, display_name: v })} />
-                <Field icon={<Phone className="w-4 h-4" />} placeholder="Телефон" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} type="tel" />
-                <Field icon={<Instagram className="w-4 h-4" />} placeholder="Instagram (без @)" value={form.instagram} onChange={(v) => setForm({ ...form, instagram: v })} />
-                <Field icon={<Send className="w-4 h-4" />} placeholder="Telegram (без @)" value={form.telegram} onChange={(v) => setForm({ ...form, telegram: v })} />
+                <Field icon={<UserIcon className="w-4 h-4" />} placeholder="Имя" binding={text.field("display_name")}  />
+                <Field icon={<Phone className="w-4 h-4" />} placeholder="Телефон" binding={text.field("phone")}  type="tel" />
+                <Field icon={<Instagram className="w-4 h-4" />} placeholder="Instagram (без @)" binding={text.field("instagram")}  />
+                <Field icon={<Send className="w-4 h-4" />} placeholder="Telegram (без @)" binding={text.field("telegram")}  />
                 <motion.button
-                  whileTap={{ scale: 0.97 }} onClick={submit} disabled={upsert.isPending}
+                  whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={submit} disabled={upsert.isPending}
                   className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50"
                 >
                   {upsert.isPending ? "Сохранение..." : "Сохранить"}
@@ -195,14 +188,13 @@ export default function MasterProfileCard() {
   );
 }
 
-function Field({ icon, value, onChange, placeholder, type }: { icon: React.ReactNode; value: string; onChange: (v: string) => void; placeholder: string; type?: string }) {
+function Field({ icon, binding, placeholder, type }: { icon: React.ReactNode; binding: ReturnType<ReturnType<typeof useImeSafeFields>["field"]>; placeholder: string; type?: string }) {
   return (
     <div className="relative">
       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">{icon}</div>
       <input
         type={type ?? "text"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        {...binding}
         placeholder={placeholder}
         className="w-full h-11 pl-11 pr-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
       />

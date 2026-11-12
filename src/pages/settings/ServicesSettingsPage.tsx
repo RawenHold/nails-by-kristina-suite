@@ -1,3 +1,4 @@
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import { useState, useRef, useEffect } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import GlassCard from "@/components/ui/GlassCard";
@@ -37,9 +38,10 @@ export default function ServicesSettingsPage({ embedded = false }: { embedded?: 
     }
   }, [serviceForm]);
 
-  const readLatest = (refVal: string | undefined, latest: string) => (latest ?? refVal ?? "").trim();
+  const readLatest = (refVal: string | undefined, latest: string) => (refVal ?? latest ?? "").trim();
 
   const submit = async () => {
+    await commitTextInput();
     if (!serviceForm) return;
     const name = readLatest(nameRef.current?.value, nameLatest.current);
     const priceRaw = readLatest(priceRef.current?.value, priceLatest.current);
@@ -109,7 +111,7 @@ export default function ServicesSettingsPage({ embedded = false }: { embedded?: 
                 <h2 className="text-lg font-display font-semibold text-foreground">{serviceForm.id ? "Редактировать услугу" : "Новая услуга"}</h2>
                 <button onClick={() => setServiceForm(null)} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"><X className="w-4 h-4" /></button>
               </div>
-              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void submit().catch(() => { /* Mutation reports the error; retain draft. */ }); }}>
                 <input ref={nameRef} defaultValue={serviceForm.name}
                   onInput={(e) => { nameLatest.current = (e.target as HTMLInputElement).value; }}
                   onCompositionEnd={(e) => { nameLatest.current = (e.target as HTMLInputElement).value; }}
@@ -134,7 +136,7 @@ export default function ServicesSettingsPage({ embedded = false }: { embedded?: 
                   lang="ru" autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
                   className="w-full h-11 px-4 rounded-2xl bg-secondary/70 text-foreground text-sm focus:outline-none"
                   placeholder="Категория (необязательно)" />
-                <motion.button whileTap={{ scale: 0.97 }} type="submit"
+                <motion.button whileTap={{ scale: 0.97 }} type="submit" onPointerDown={commitActiveInput}
                   disabled={createService.isPending || updateService.isPending}
                   className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20 disabled:opacity-50">
                   {createService.isPending || updateService.isPending ? "Сохранение..." : serviceForm.id ? "Сохранить" : "Добавить услугу"}

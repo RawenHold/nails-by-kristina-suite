@@ -1,3 +1,4 @@
+import { commitActiveInput, commitTextInput } from "@/lib/ime";
 import ClientPicker from "@/components/ui/ClientPicker";
 import TimePicker from "@/components/ui/TimePicker";
 import { useState, useRef, useEffect } from "react";
@@ -80,7 +81,7 @@ export default function CalendarPage() {
   const completeNoteRef = useRef<HTMLInputElement>(null);
   const completeNoteLatest = useRef<string>("");
 
-  const readBest = (refVal: string | undefined, latest: string) => latest ?? refVal ?? "";
+  const readBest = (refVal: string | undefined, latest: string) => refVal ?? latest ?? "";
 
   // Sync DOM value when opening the form
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function CalendarPage() {
   };
 
   const handleSave = async () => {
+    await commitTextInput();
     const notes = readBest(apptNotesRef.current?.value, apptNotesLatest.current);
     const startTime = new Date(form.date);
     startTime.setHours(parseInt(form.start_hour), parseInt(form.start_min), 0, 0);
@@ -187,6 +189,7 @@ export default function CalendarPage() {
   };
 
   const handleComplete = async () => {
+    await commitTextInput();
     if (!completeTarget) return;
     const amount = parseMoney(paymentForm.amount);
     if (!amount || amount <= 0) { toast.error("Укажите сумму"); return; }
@@ -283,7 +286,7 @@ export default function CalendarPage() {
         onClose={closeForm}
         title={editing ? "Редактировать запись" : "Новая запись"}
         footer={
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={createAppointment.isPending || updateAppointment.isPending}
+          <motion.button whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={handleSave} disabled={createAppointment.isPending || updateAppointment.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 disabled:opacity-50">
             {createAppointment.isPending || updateAppointment.isPending ? "Сохранение..." : (editing ? "Сохранить" : "Создать запись")}
           </motion.button>
@@ -378,7 +381,7 @@ export default function CalendarPage() {
               defaultValue={form.notes}
               onInput={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
               onCompositionEnd={(e) => { apptNotesLatest.current = (e.target as HTMLInputElement).value; }}
-              autoComplete="off"
+              lang="ru" autoComplete="off"
               autoCorrect="off"
               autoCapitalize="sentences"
               spellCheck={false}
@@ -394,7 +397,7 @@ export default function CalendarPage() {
         onClose={() => setCompleteTarget(null)}
         title="Завершить визит"
         footer={
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleComplete} disabled={completeAppointment.isPending}
+          <motion.button whileTap={{ scale: 0.97 }} onPointerDown={commitActiveInput} onClick={handleComplete} disabled={completeAppointment.isPending}
             className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 disabled:opacity-50">
             {completeAppointment.isPending ? "Сохранение..." : "Подтвердить оплату"}
           </motion.button>
@@ -435,7 +438,7 @@ export default function CalendarPage() {
                 defaultValue=""
                 onInput={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
                 onCompositionEnd={(e) => { completeNoteLatest.current = (e.target as HTMLInputElement).value; }}
-                autoComplete="off"
+                lang="ru" autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="sentences"
                 spellCheck={false}
